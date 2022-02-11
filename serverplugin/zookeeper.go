@@ -28,7 +28,7 @@ type ZooKeeperRegisterPlugin struct {
 	ServiceAddress string
 	// zookeeper addresses
 	ZooKeeperServers []string
-	// base path for rpcx server, for example com/example/rpcx
+	// base path for flare server, for example com/example/flare
 	BasePath string
 	Metrics  metrics.Registry
 	// Registered services

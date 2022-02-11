@@ -27,7 +27,7 @@ type ConsulRegisterPlugin struct {
 	ServiceAddress string
 	// consul addresses
 	ConsulServers []string
-	// base path for rpcx server, for example com/example/rpcx
+	// base path for flare server, for example com/example/flare
 	BasePath string
 	Metrics  metrics.Registry
 	// Registered services

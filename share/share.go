@@ -30,7 +30,7 @@ const (
 // It writes trace log with logger Debug level.
 var Trace bool
 
-// Codecs are codecs supported by rpcx. You can add customized codecs in Codecs.
+// Codecs are codecs supported by flare. You can add customized codecs in Codecs.
 var Codecs = map[protocol.SerializeType]codec.Codec{
 	protocol.SerializeNone: &codec.ByteCodec{},
 	protocol.JSON:          &codec.JSONCodec{},

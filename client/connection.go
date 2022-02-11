@@ -106,7 +106,7 @@ func newDirectConn(c *Client, network, address string) (net.Conn, error) {
 	return conn, nil
 }
 
-var connected = "200 Connected to rpcx"
+var connected = "200 Connected to flare"
 
 func newDirectHTTPConn(c *Client, network, address string) (net.Conn, error) {
 	if c == nil {

@@ -18,7 +18,7 @@ func newDirectQuicConn(c *Client, network, address string) (net.Conn, error) {
 	}
 
 	if len(tlsConf.NextProtos) == 0 {
-		tlsConf.NextProtos = []string{"rpcx"}
+		tlsConf.NextProtos = []string{"flare"}
 	}
 
 	quicConfig := &quic.Config{

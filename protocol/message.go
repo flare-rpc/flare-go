@@ -12,7 +12,7 @@ import (
 
 var bufferPool = util.NewLimitedPool(512, 4096)
 
-// Compressors are compressors supported by rpcx. You can add customized compressor in Compressors.
+// Compressors are compressors supported by flare. You can add customized compressor in Compressors.
 var Compressors = map[CompressType]Compressor{
 	None: &RawDataCompressor{},
 	Gzip: &GzipCompressor{},
@@ -117,12 +117,12 @@ func NewMessage() *Message {
 //
 type Header [12]byte
 
-// CheckMagicNumber checks whether header starts rpcx magic number.
+// CheckMagicNumber checks whether header starts flare magic number.
 func (h Header) CheckMagicNumber() bool {
 	return h[0] == magicNumber
 }
 
-// Version returns version of rpcx protocol.
+// Version returns version of flare protocol.
 func (h Header) Version() byte {
 	return h[1]
 }

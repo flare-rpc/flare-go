@@ -1,6 +1,6 @@
 # xgen
 
-`xgen` isn a tool that can help you generate a server stub for rpcx services.
+`xgen` isn a tool that can help you generate a server stub for flare services.
 
 It search structs in your specified files and add them as services. Currently it doesn't support registring functions.
 
@@ -14,7 +14,7 @@ go get -u github.com/flare-rpc/flare-go/tool/xgen/...
 xgen -o server.go <file>.go
 ```
 
-The above will generate server.go containing a rpcx which registers all exported struct types contained in `<file>.go`.
+The above will generate server.go containing a flare which registers all exported struct types contained in `<file>.go`.
 
 
 ## Options

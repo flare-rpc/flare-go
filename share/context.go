@@ -9,7 +9,7 @@ import (
 
 // var _ context.Context = &Context{}
 
-// Context is a rpcx customized Context that can contains multiple values.
+// Context is a flare customized Context that can contains multiple values.
 type Context struct {
 	tagsLock sync.Mutex
 	tags     map[interface{}]interface{}

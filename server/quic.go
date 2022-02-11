@@ -19,7 +19,7 @@ func quicMakeListener(s *Server, address string) (ln net.Listener, err error) {
 	}
 
 	if len(s.tlsConfig.NextProtos) == 0 {
-		s.tlsConfig.NextProtos = []string{"rpcx"}
+		s.tlsConfig.NextProtos = []string{"flare"}
 	}
 
 	return quick.Listen("udp", address, s.tlsConfig, nil)

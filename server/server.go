@@ -48,7 +48,7 @@ type contextKey struct {
 	name string
 }
 
-func (k *contextKey) String() string { return "rpcx context value " + k.name }
+func (k *contextKey) String() string { return "flare context value " + k.name }
 
 var (
 	// RemoteConnContextKey is a context key. It can be used in
@@ -67,7 +67,7 @@ var (
 
 type Handler func(ctx *Context) error
 
-// Server is rpcx server that use TCP or UDP.
+// Server is flare server that use TCP or UDP.
 type Server struct {
 	ln                 net.Listener
 	readTimeout        time.Duration
@@ -261,7 +261,7 @@ func (s *Server) serveListener(ln net.Listener) error {
 					tempDelay = max
 				}
 
-				log.Errorf("rpcx: Accept error: %v; retrying in %v", e, tempDelay)
+				log.Errorf("flare: Accept error: %v; retrying in %v", e, tempDelay)
 				time.Sleep(tempDelay)
 				continue
 			}
@@ -361,7 +361,7 @@ func (s *Server) serveConn(conn net.Conn) {
 			conn.SetWriteDeadline(time.Now().Add(d))
 		}
 		if err := tlsConn.Handshake(); err != nil {
-			log.Errorf("rpcx: TLS handshake error from %s: %v", conn.RemoteAddr(), err)
+			log.Errorf("flare: TLS handshake error from %s: %v", conn.RemoteAddr(), err)
 			return
 		}
 	}
@@ -394,7 +394,7 @@ func (s *Server) serveConn(conn net.Conn) {
 			if err == io.EOF {
 				log.Infof("client has closed this connection: %s", conn.RemoteAddr().String())
 			} else if strings.Contains(err.Error(), "use of closed network connection") {
-				log.Infof("rpcx: connection %s is closed", conn.RemoteAddr().String())
+				log.Infof("flare: connection %s is closed", conn.RemoteAddr().String())
 			} else if errors.Is(err, ErrReqReachLimit) {
 				if !req.IsOneway() {
 					res := req.Clone()
@@ -419,7 +419,7 @@ func (s *Server) serveConn(conn net.Conn) {
 				protocol.FreeMsg(req)
 				continue
 			} else {
-				log.Warnf("rpcx: failed to read request: %v", err)
+				log.Warnf("flare: failed to read request: %v", err)
 			}
 			return
 		}
@@ -526,7 +526,7 @@ func (s *Server) serveConn(conn net.Conn) {
 				if s.HandleServiceError != nil {
 					s.HandleServiceError(err)
 				} else {
-					log.Warnf("rpcx: failed to handle request: %v", err)
+					log.Warnf("flare: failed to handle request: %v", err)
 				}
 			}
 
@@ -662,7 +662,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 
 	s.serviceMapMu.RUnlock()
 	if service == nil {
-		err = errors.New("rpcx: can't find service " + serviceName)
+		err = errors.New("flare: can't find service " + serviceName)
 		return handleError(res, err)
 	}
 	mtype := service.method[methodName]
@@ -670,7 +670,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 		if service.function[methodName] != nil { // check raw functions
 			return s.handleRequestForFunction(ctx, req)
 		}
-		err = errors.New("rpcx: can't find method " + methodName)
+		err = errors.New("flare: can't find method " + methodName)
 		return handleError(res, err)
 	}
 
@@ -754,12 +754,12 @@ func (s *Server) handleRequestForFunction(ctx context.Context, req *protocol.Mes
 	service := s.serviceMap[serviceName]
 	s.serviceMapMu.RUnlock()
 	if service == nil {
-		err = errors.New("rpcx: can't find service  for func raw function")
+		err = errors.New("flare: can't find service  for func raw function")
 		return handleError(res, err)
 	}
 	mtype := service.function[methodName]
 	if mtype == nil {
-		err = errors.New("rpcx: can't find method " + methodName)
+		err = errors.New("flare: can't find method " + methodName)
 		return handleError(res, err)
 	}
 
@@ -815,7 +815,7 @@ func handleError(res *protocol.Message, err error) (*protocol.Message, error) {
 }
 
 // Can connect to RPC service using HTTP CONNECT to rpcPath.
-var connected = "200 Connected to rpcx"
+var connected = "200 Connected to flare"
 
 // ServeHTTP implements an http.Handler that answers RPC requests.
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -944,14 +944,14 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 // Restart restarts this server gracefully.
-// It starts a new rpcx server with the same port with SO_REUSEPORT socket option,
-// and shutdown this rpcx server gracefully.
+// It starts a new flare server with the same port with SO_REUSEPORT socket option,
+// and shutdown this flare server gracefully.
 func (s *Server) Restart(ctx context.Context) error {
 	pid, err := s.startProcess()
 	if err != nil {
 		return err
 	}
-	log.Infof("restart a new rpcx server: %d", pid)
+	log.Infof("restart a new flare server: %d", pid)
 
 	// TODO: is it necessary?
 	time.Sleep(3 * time.Second)

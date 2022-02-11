@@ -127,12 +127,12 @@ func (s *Server) register(rcvr interface{}, name string, useName bool) (string, 
 		sname = name
 	}
 	if sname == "" {
-		errorStr := "rpcx.Register: no service name for type " + service.typ.String()
+		errorStr := "flare.Register: no service name for type " + service.typ.String()
 		log.Error(errorStr)
 		return sname, errors.New(errorStr)
 	}
 	if !useName && !isExported(sname) {
-		errorStr := "rpcx.Register: type " + sname + " is not exported"
+		errorStr := "flare.Register: type " + sname + " is not exported"
 		log.Error(errorStr)
 		return sname, errors.New(errorStr)
 	}
@@ -147,9 +147,9 @@ func (s *Server) register(rcvr interface{}, name string, useName bool) (string, 
 		// To help the user, see if a pointer receiver would work.
 		method := suitableMethods(reflect.PtrTo(service.typ), false)
 		if len(method) != 0 {
-			errorStr = "rpcx.Register: type " + sname + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
+			errorStr = "flare.Register: type " + sname + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
 		} else {
-			errorStr = "rpcx.Register: type " + sname + " has no exported methods of suitable type"
+			errorStr = "flare.Register: type " + sname + " has no exported methods of suitable type"
 		}
 		log.Error(errorStr)
 		return sname, errors.New(errorStr)
@@ -188,17 +188,17 @@ func (s *Server) registerFunction(servicePath string, fn interface{}, name strin
 		fname = name
 	}
 	if fname == "" {
-		errorStr := "rpcx.registerFunction: no func name for type " + f.Type().String()
+		errorStr := "flare.registerFunction: no func name for type " + f.Type().String()
 		log.Error(errorStr)
 		return fname, errors.New(errorStr)
 	}
 
 	t := f.Type()
 	if t.NumIn() != 3 {
-		return fname, fmt.Errorf("rpcx.registerFunction: has wrong number of ins: %s", f.Type().String())
+		return fname, fmt.Errorf("flare.registerFunction: has wrong number of ins: %s", f.Type().String())
 	}
 	if t.NumOut() != 1 {
-		return fname, fmt.Errorf("rpcx.registerFunction: has wrong number of outs: %s", f.Type().String())
+		return fname, fmt.Errorf("flare.registerFunction: has wrong number of outs: %s", f.Type().String())
 	}
 
 	// First arg must be context.Context

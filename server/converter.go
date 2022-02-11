@@ -24,7 +24,7 @@ const (
 	XErrorMessage      = "X-RPCX-ErrorMessage"
 )
 
-// HTTPRequest2RpcxRequest converts a http request to a rpcx request.
+// HTTPRequest2RpcxRequest converts a http request to a flare request.
 func HTTPRequest2RpcxRequest(r *http.Request) (*protocol.Message, error) {
 	req := protocol.GetPooledMsg()
 	req.SetMessageType(protocol.Request)

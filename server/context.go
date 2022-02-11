@@ -8,7 +8,7 @@ import (
 	"github.com/flare-rpc/flare-go/share"
 )
 
-// Context represents a rpcx FastCall context.
+// Context represents a flare FastCall context.
 type Context struct {
 	conn net.Conn
 	req  *protocol.Message

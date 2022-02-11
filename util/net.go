@@ -27,11 +27,11 @@ func GetFreePort() (port int, err error) {
 	return strconv.Atoi(portString)
 }
 
-// ParseRpcxAddress parses rpcx address such as tcp@127.0.0.1:8972  quic@192.168.1.1:9981
+// ParseRpcxAddress parses flare address such as tcp@127.0.0.1:8972  quic@192.168.1.1:9981
 func ParseRpcxAddress(addr string) (network string, ip string, port int, err error) {
 	ati := strings.Index(addr, "@")
 	if ati <= 0 {
-		return "", "", 0, fmt.Errorf("invalid rpcx address: %s", addr)
+		return "", "", 0, fmt.Errorf("invalid flare address: %s", addr)
 	}
 
 	network = addr[:ati]

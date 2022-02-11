@@ -37,7 +37,7 @@ func NewOpenTelemetryPlugin(tracer trace.Tracer, propagators propagation.TextMap
 }
 
 func (p OpenTelemetryPlugin) Register(name string, rcvr interface{}, metadata string) error {
-	_, span := p.tracer.Start(context.Background(), "rpcx.Register")
+	_, span := p.tracer.Start(context.Background(), "flare.Register")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("register_service", name))
@@ -46,7 +46,7 @@ func (p OpenTelemetryPlugin) Register(name string, rcvr interface{}, metadata st
 }
 
 func (p OpenTelemetryPlugin) Unregister(name string) error {
-	_, span := p.tracer.Start(context.Background(), "rpcx.Unregister")
+	_, span := p.tracer.Start(context.Background(), "flare.Unregister")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("register_service", name))
@@ -55,7 +55,7 @@ func (p OpenTelemetryPlugin) Unregister(name string) error {
 }
 
 func (p OpenTelemetryPlugin) RegisterFunction(serviceName, fname string, fn interface{}, metadata string) error {
-	_, span := p.tracer.Start(context.Background(), "rpcx.RegisterFunction")
+	_, span := p.tracer.Start(context.Background(), "flare.RegisterFunction")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("register_function", serviceName+"."+fname))
@@ -64,7 +64,7 @@ func (p OpenTelemetryPlugin) RegisterFunction(serviceName, fname string, fn inte
 }
 
 func (p OpenTelemetryPlugin) HandleConnAccept(conn net.Conn) (net.Conn, bool) {
-	_, span := p.tracer.Start(context.Background(), "rpcx.AcceptConn")
+	_, span := p.tracer.Start(context.Background(), "flare.AcceptConn")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("remote_addr", conn.RemoteAddr().String()))
@@ -76,7 +76,7 @@ func (p OpenTelemetryPlugin) PreHandleRequest(ctx context.Context, r *protocol.M
 	spanCtx := share.Extract(ctx, p.propagators)
 	ctx0 := trace.ContextWithSpanContext(ctx, spanCtx)
 
-	ctx1, span := p.tracer.Start(ctx0, "rpcx.service."+r.ServicePath+"."+r.ServiceMethod)
+	ctx1, span := p.tracer.Start(ctx0, "flare.service."+r.ServicePath+"."+r.ServiceMethod)
 	share.Inject(ctx1, p.propagators)
 
 	ctx.(*share.Context).SetValue(share.OpenTelemetryKey, span)

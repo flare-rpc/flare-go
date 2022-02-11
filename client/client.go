@@ -153,7 +153,7 @@ type Option struct {
 	// IdleTimeout sets max idle time for underlying net.Conns
 	IdleTimeout time.Duration
 
-	// BackupLatency is used for Failbackup mode. rpcx will sends another request if the first response doesn't return in BackupLatency time.
+	// BackupLatency is used for Failbackup mode. flare will sends another request if the first response doesn't return in BackupLatency time.
 	BackupLatency time.Duration
 
 	// Breaker is used to config CircuitBreaker
@@ -687,7 +687,7 @@ func (client *Client) input() {
 	client.mutex.Unlock()
 
 	if err != nil && !closing {
-		log.Error("rpcx: client protocol error:", err)
+		log.Error("flare: client protocol error:", err)
 	}
 }
 
