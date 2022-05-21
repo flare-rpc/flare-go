@@ -12,7 +12,7 @@ tools:
 	go get github.com/matm/gocov-html
 
 golangci-lint:
-	golangci-lint run -D errcheck --build-tags 'quic kcp'
+	golangci-lint run -D errcheck
 
 lint:
 	golint ./...
@@ -30,13 +30,13 @@ build:
 	go build ./...
 
 build-all:
-	go build -tags "kcp quic" ./...
+	go build ./...
 
 test:
 	go test -race ./...
 
 cover:
-	gocov test -tags "kcp quic" ./... | gocov-html > cover.html
+	gocov test  ./... | gocov-html > cover.html
 	open cover.html
 
 check-libs:
