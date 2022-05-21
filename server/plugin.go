@@ -4,8 +4,8 @@ import (
 	"context"
 	"net"
 
-	"github.com/flare-rpc/flare-go/errors"
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/errors"
+	"github.com/flare-rpc/flarego/protocol"
 	"github.com/soheilhy/cmux"
 )
 

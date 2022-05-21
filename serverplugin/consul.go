@@ -14,7 +14,7 @@ import (
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store"
 	"github.com/rpcxio/libkv/store/consul"
-	"github.com/flare-rpc/flare-go/log"
+	"github.com/flare-rpc/flarego/log"
 )
 
 func init() {
@@ -56,6 +56,7 @@ func (p *ConsulRegisterPlugin) Start() error {
 		kv, err := libkv.NewStore(store.CONSUL, p.ConsulServers, p.Options)
 		if err != nil {
 			log.Errorf("cannot create consul registry: %v", err)
+			close(p.done)
 			return err
 		}
 		p.kv = kv
@@ -65,9 +66,10 @@ func (p *ConsulRegisterPlugin) Start() error {
 		p.BasePath = p.BasePath[1:]
 	}
 
-	err := p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err := p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create consul path %s: %v", p.BasePath, err)
+		close(p.done)
 		return err
 	}
 
@@ -192,7 +194,7 @@ func (p *ConsulRegisterPlugin) Register(name string, rcvr interface{}, metadata 
 	if p.BasePath[0] == '/' {
 		p.BasePath = p.BasePath[1:]
 	}
-	err = p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create consul path %s: %v", p.BasePath, err)
 		return err
@@ -249,7 +251,7 @@ func (p *ConsulRegisterPlugin) Unregister(name string) (err error) {
 	if p.BasePath[0] == '/' {
 		p.BasePath = p.BasePath[1:]
 	}
-	err = p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create consul path %s: %v", p.BasePath, err)
 		return err
@@ -267,7 +269,7 @@ func (p *ConsulRegisterPlugin) Unregister(name string) (err error) {
 
 	err = p.kv.Delete(nodePath)
 	if err != nil {
-		log.Errorf("cannot create consul path %s: %v", nodePath, err)
+		log.Errorf("cannot remove consul path %s: %v", nodePath, err)
 		return err
 	}
 

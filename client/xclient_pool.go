@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/protocol"
 )
 
 // XClientPool is a xclient pool with fixed size.

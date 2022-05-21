@@ -6,7 +6,7 @@ package serverplugin
 // 	"reflect"
 // 	"runtime"
 
-// 	"github.com/flare-rpc/flare-go/protocol"
+// 	"github.com/flare-rpc/flarego/protocol"
 // 	"golang.org/x/net/trace"
 // )
 

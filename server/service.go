@@ -11,8 +11,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	rerrors "github.com/flare-rpc/flare-go/errors"
-	"github.com/flare-rpc/flare-go/log"
+	rerrors "github.com/flare-rpc/flarego/errors"
+	"github.com/flare-rpc/flarego/log"
 )
 
 // Precompute the reflect type for error. Can't use error directly

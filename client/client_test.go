@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	testutils "github.com/flare-rpc/flare-go/_testutils"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/server"
+	testutils "github.com/flare-rpc/flarego/_testutils"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/server"
 )
 
 type Args struct {
@@ -145,22 +145,22 @@ func TestClient_IT_Concurrency(t *testing.T) {
 
 func testSendRaw(t *testing.T, client *Client, seq uint64, x, y int32, wg *sync.WaitGroup) {
 	defer wg.Done()
-	rpcxReq := protocol.GetPooledMsg()
-	rpcxReq.SetMessageType(protocol.Request)
-	rpcxReq.SetSeq(seq)
-	rpcxReq.ServicePath = "PBArith"
-	rpcxReq.ServiceMethod = "Mul"
-	rpcxReq.SetSerializeType(protocol.ProtoBuffer)
-	rpcxReq.SetOneway(false)
-	defer protocol.FreeMsg(rpcxReq)
+	flareReq := protocol.GetPooledMsg()
+	flareReq.SetMessageType(protocol.Request)
+	flareReq.SetSeq(seq)
+	flareReq.ServicePath = "PBArith"
+	flareReq.ServiceMethod = "Mul"
+	flareReq.SetSerializeType(protocol.ProtoBuffer)
+	flareReq.SetOneway(false)
+	defer protocol.FreeMsg(flareReq)
 
 	pbArgs := &testutils.ProtoArgs{
 		A: x,
 		B: y,
 	}
 	data, _ := pbArgs.Marshal()
-	rpcxReq.Payload = data
-	_, reply, err := client.SendRaw(context.Background(), rpcxReq)
+	flareReq.Payload = data
+	_, reply, err := client.SendRaw(context.Background(), flareReq)
 	if err != nil {
 		t.Errorf("failed to call SendRaw: %v", err)
 		return

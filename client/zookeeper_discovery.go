@@ -8,7 +8,7 @@ import (
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store"
 	"github.com/rpcxio/libkv/store/zookeeper"
-	"github.com/flare-rpc/flare-go/log"
+	"github.com/flare-rpc/flarego/log"
 )
 
 func init() {

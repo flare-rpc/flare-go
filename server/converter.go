@@ -6,26 +6,26 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
 )
 
 const (
-	XVersion           = "X-RPCX-Version"
-	XMessageType       = "X-RPCX-MessageType"
-	XHeartbeat         = "X-RPCX-Heartbeat"
-	XOneway            = "X-RPCX-Oneway"
-	XMessageStatusType = "X-RPCX-MessageStatusType"
-	XSerializeType     = "X-RPCX-SerializeType"
-	XMessageID         = "X-RPCX-MessageID"
-	XServicePath       = "X-RPCX-ServicePath"
-	XServiceMethod     = "X-RPCX-ServiceMethod"
-	XMeta              = "X-RPCX-Meta"
-	XErrorMessage      = "X-RPCX-ErrorMessage"
+	XVersion           = "X-FLARE-Version"
+	XMessageType       = "X-FLARE-MessageType"
+	XHeartbeat         = "X-FLARE-Heartbeat"
+	XOneway            = "X-FLARE-Oneway"
+	XMessageStatusType = "X-FLARE-MessageStatusType"
+	XSerializeType     = "X-FLARE-SerializeType"
+	XMessageID         = "X-FLARE-MessageID"
+	XServicePath       = "X-FLARE-ServicePath"
+	XServiceMethod     = "X-FLARE-ServiceMethod"
+	XMeta              = "X-FLARE-Meta"
+	XErrorMessage      = "X-FLARE-ErrorMessage"
 )
 
-// HTTPRequest2RpcxRequest converts a http request to a flare request.
-func HTTPRequest2RpcxRequest(r *http.Request) (*protocol.Message, error) {
+// HTTPRequest2FlareRequest converts a http request to a flare request.
+func HTTPRequest2FlareRequest(r *http.Request) (*protocol.Message, error) {
 	req := protocol.GetPooledMsg()
 	req.SetMessageType(protocol.Request)
 
@@ -95,7 +95,7 @@ func HTTPRequest2RpcxRequest(r *http.Request) (*protocol.Message, error) {
 	return req, nil
 }
 
-// func RpcxResponse2HttpResponse(res *protocol.Message) (url.Values, []byte, error) {
+// func FlareResponse2HttpResponse(res *protocol.Message) (url.Values, []byte, error) {
 // 	m := make(url.Values)
 // 	m.Set(XVersion, strconv.Itoa(int(res.Version())))
 // 	if res.IsHeartbeat() {

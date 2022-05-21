@@ -20,9 +20,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
+	"github.com/soheilhy/cmux"
 	"golang.org/x/net/websocket"
 )
 
@@ -118,7 +119,7 @@ func NewServer(options ...OptionFn) *Server {
 		doneChan:   make(chan struct{}),
 		serviceMap: make(map[string]*service),
 		router:     make(map[string]Handler),
-		AsyncWrite: false, // 除非你想benchmark或者极致优化，否则建议你设置为false
+		AsyncWrite: false, // 除非你想做进一步的优化测试，否则建议你设置为false
 	}
 
 	for _, op := range options {
@@ -198,7 +199,7 @@ func (s *Server) Serve(network, address string) (err error) {
 	var ln net.Listener
 	ln, err = s.makeListener(network, address)
 	if err != nil {
-		return
+		return err
 	}
 
 	if network == "http" {
@@ -244,10 +245,9 @@ func (s *Server) serveListener(ln net.Listener) error {
 	for {
 		conn, e := ln.Accept()
 		if e != nil {
-			select {
-			case <-s.getDoneChan():
+			if s.isShutdown() {
+				<-s.doneChan
 				return ErrServerClosed
-			default:
 			}
 
 			if ne, ok := e.(net.Error); ok && ne.Temporary() {
@@ -266,7 +266,7 @@ func (s *Server) serveListener(ln net.Listener) error {
 				continue
 			}
 
-			if strings.Contains(e.Error(), "listener closed") {
+			if errors.Is(e, cmux.ErrListenerClosed) {
 				return ErrServerClosed
 			}
 			return e
@@ -328,6 +328,24 @@ func (s *Server) serveByWS(ln net.Listener, rpcPath string) {
 	srv.Serve(ln)
 }
 
+func (s *Server) sendResponse(ctx *share.Context, conn net.Conn, writeCh chan *[]byte, err error, req, res *protocol.Message) {
+	if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
+		res.SetCompressType(req.CompressType())
+	}
+	data := res.EncodeSlicePointer()
+	s.Plugins.DoPreWriteResponse(ctx, req, res, err)
+	if s.AsyncWrite {
+		writeCh <- data
+	} else {
+		if s.writeTimeout != 0 {
+			conn.SetWriteDeadline(time.Now().Add(s.writeTimeout))
+		}
+		conn.Write(*data)
+		protocol.PutData(data)
+	}
+	s.Plugins.DoPostWriteResponse(ctx, req, res, err)
+}
+
 func (s *Server) serveConn(conn net.Conn) {
 	if s.isShutdown() {
 		s.closeConn(conn)
@@ -348,6 +366,11 @@ func (s *Server) serveConn(conn net.Conn) {
 
 		if share.Trace {
 			log.Debugf("server closed conn: %v", conn.RemoteAddr().String())
+		}
+
+		// make sure all inflight requests are handled and all drained
+		if s.isShutdown() {
+			<-s.doneChan
 		}
 
 		s.closeConn(conn)
@@ -389,29 +412,17 @@ func (s *Server) serveConn(conn net.Conn) {
 
 		req, err := s.readRequest(ctx, r)
 		if err != nil {
-			protocol.FreeMsg(req)
-
 			if err == io.EOF {
 				log.Infof("client has closed this connection: %s", conn.RemoteAddr().String())
-			} else if strings.Contains(err.Error(), "use of closed network connection") {
+			} else if errors.Is(err, net.ErrClosed) {
 				log.Infof("flare: connection %s is closed", conn.RemoteAddr().String())
 			} else if errors.Is(err, ErrReqReachLimit) {
 				if !req.IsOneway() {
 					res := req.Clone()
 					res.SetMessageType(protocol.Response)
-					if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
-						res.SetCompressType(req.CompressType())
-					}
+
 					handleError(res, err)
-					s.Plugins.DoPreWriteResponse(ctx, req, res, err)
-					data := res.EncodeSlicePointer()
-					if s.AsyncWrite {
-						writeCh <- data
-					} else {
-						conn.Write(*data)
-						protocol.PutData(data)
-					}
-					s.Plugins.DoPostWriteResponse(ctx, req, res, err)
+					s.sendResponse(ctx, conn, writeCh, err, req, res)
 					protocol.FreeMsg(res)
 				} else {
 					s.Plugins.DoPreWriteResponse(ctx, req, nil, err)
@@ -421,11 +432,10 @@ func (s *Server) serveConn(conn net.Conn) {
 			} else {
 				log.Warnf("flare: failed to read request: %v", err)
 			}
-			return
-		}
 
-		if s.writeTimeout != 0 {
-			conn.SetWriteDeadline(t0.Add(s.writeTimeout))
+			protocol.FreeMsg(req)
+
+			return
 		}
 
 		if share.Trace {
@@ -443,19 +453,8 @@ func (s *Server) serveConn(conn net.Conn) {
 			if !req.IsOneway() {
 				res := req.Clone()
 				res.SetMessageType(protocol.Response)
-				if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
-					res.SetCompressType(req.CompressType())
-				}
 				handleError(res, err)
-				s.Plugins.DoPreWriteResponse(ctx, req, res, err)
-				data := res.EncodeSlicePointer()
-				if s.AsyncWrite {
-					writeCh <- data
-				} else {
-					conn.Write(*data)
-					protocol.PutData(data)
-				}
-				s.Plugins.DoPostWriteResponse(ctx, req, res, err)
+				s.sendResponse(ctx, conn, writeCh, err, req, res)
 				protocol.FreeMsg(res)
 			} else {
 				s.Plugins.DoPreWriteResponse(ctx, req, nil, err)
@@ -487,6 +486,9 @@ func (s *Server) serveConn(conn net.Conn) {
 				if s.AsyncWrite {
 					writeCh <- data
 				} else {
+					if s.writeTimeout != 0 {
+						conn.SetWriteDeadline(time.Now().Add(s.writeTimeout))
+					}
 					conn.Write(*data)
 					protocol.PutData(data)
 				}
@@ -517,10 +519,10 @@ func (s *Server) serveConn(conn net.Conn) {
 					log.Errorf("[handler internal error]: servicepath: %s, servicemethod, err: %v", req.ServicePath, req.ServiceMethod, err)
 				}
 
+				protocol.FreeMsg(req)
 				return
 			}
 
-			//
 			res, err := s.handleRequest(ctx, req)
 			if err != nil {
 				if s.HandleServiceError != nil {
@@ -530,7 +532,6 @@ func (s *Server) serveConn(conn net.Conn) {
 				}
 			}
 
-			s.Plugins.DoPreWriteResponse(ctx, req, res, err)
 			if !req.IsOneway() {
 				if len(resMetadata) > 0 { // copy meta in context to request
 					meta := res.Metadata
@@ -545,20 +546,8 @@ func (s *Server) serveConn(conn net.Conn) {
 					}
 				}
 
-				if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
-					res.SetCompressType(req.CompressType())
-				}
-				data := res.EncodeSlicePointer()
-				if s.AsyncWrite {
-					writeCh <- data
-				} else {
-					conn.Write(*data)
-					protocol.PutData(data)
-				}
-
+				s.sendResponse(ctx, conn, writeCh, err, req, res)
 			}
-
-			s.Plugins.DoPostWriteResponse(ctx, req, res, err)
 
 			if share.Trace {
 				log.Debugf("server write response %+v for an request %+v from conn: %v", res, req, conn.RemoteAddr().String())
@@ -578,6 +567,9 @@ func (s *Server) serveAsyncWrite(conn net.Conn, writeCh chan *[]byte) {
 		case data := <-writeCh:
 			if data == nil {
 				return
+			}
+			if s.writeTimeout != 0 {
+				conn.SetWriteDeadline(time.Now().Add(s.writeTimeout))
 			}
 			conn.Write(*data)
 			protocol.PutData(data)
@@ -896,6 +888,14 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		log.Info("shutdown begin")
 
 		s.mu.Lock()
+
+		// 主动注销注册的服务
+		if s.Plugins != nil {
+			for name := range s.serviceMap {
+				s.Plugins.DoUnregister(name)
+			}
+		}
+
 		s.ln.Close()
 		for conn := range s.activeConn {
 			if tcpConn, ok := conn.(*net.TCPConn); ok {
@@ -935,6 +935,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 			s.Plugins.DoPostConnClose(conn)
 		}
 		s.closeDoneChanLocked()
+
 		s.mu.Unlock()
 
 		log.Info("shutdown end")
@@ -1006,4 +1007,18 @@ func validIP4(ipAddress string) bool {
 	ipAddress = ipAddress[:i] // remove port
 
 	return ip4Reg.MatchString(ipAddress)
+}
+
+func validIP6(ipAddress string) bool {
+	ipAddress = strings.Trim(ipAddress, " ")
+	i := strings.LastIndex(ipAddress, ":")
+	ipAddress = ipAddress[:i] // remove port
+	ipAddress = strings.TrimPrefix(ipAddress, "[")
+	ipAddress = strings.TrimSuffix(ipAddress, "]")
+	ip := net.ParseIP(ipAddress)
+	if ip != nil && ip.To4() == nil {
+		return true
+	} else {
+		return false
+	}
 }

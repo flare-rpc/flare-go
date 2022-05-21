@@ -5,7 +5,7 @@ import (
 	"time"
 
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/flare-rpc/flare-go/server"
+	"github.com/flare-rpc/flarego/server"
 )
 
 func TestZookeeperRegistry(t *testing.T) {
@@ -14,7 +14,7 @@ func TestZookeeperRegistry(t *testing.T) {
 	r := &ZooKeeperRegisterPlugin{
 		ServiceAddress:   "tcp@127.0.0.1:8972",
 		ZooKeeperServers: []string{"127.0.0.1:2181"},
-		BasePath:         "/rpcx_test",
+		BasePath:         "/flare_test",
 		Metrics:          metrics.NewRegistry(),
 		UpdateInterval:   time.Minute,
 	}

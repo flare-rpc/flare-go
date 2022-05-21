@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/juju/ratelimit"
-	"github.com/flare-rpc/flare-go/server"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/server"
 )
 
 // ReqRateLimitingPlugin can limit requests per unit time
@@ -28,8 +29,8 @@ func NewReqRateLimitingPlugin(fillInterval time.Duration, capacity int64, block 
 	}
 }
 
-// PreReadRequest can limit request processing.
-func (plugin *ReqRateLimitingPlugin) PreReadRequest(ctx context.Context) error {
+// PostReadRequest can limit request processing.
+func (plugin *ReqRateLimitingPlugin) PostReadRequest(ctx context.Context, r *protocol.Message, e error) error {
 	if plugin.block {
 		plugin.bucket.Wait(1)
 		return nil

@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/juju/ratelimit"
-	ex "github.com/flare-rpc/flare-go/errors"
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	ex "github.com/flare-rpc/flarego/errors"
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -1197,7 +1197,7 @@ loop:
 			if n == 0 {
 				break loop
 			}
-			_, err = conn.Write(sendBuffer)
+			_, err = conn.Write(sendBuffer[:n])
 			if err != nil {
 				if err == io.EOF {
 					return nil

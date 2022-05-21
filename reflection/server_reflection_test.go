@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/kr/pretty"
-	testutils "github.com/flare-rpc/flare-go/_testutils"
+	testutils "github.com/flare-rpc/flarego/_testutils"
 	"github.com/stretchr/testify/assert"
 )
 

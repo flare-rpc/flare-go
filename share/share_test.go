@@ -3,7 +3,7 @@ package share
 import (
 	"testing"
 
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/protocol"
 	"github.com/stretchr/testify/assert"
 )
 

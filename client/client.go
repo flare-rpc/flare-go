@@ -14,23 +14,23 @@ import (
 	"time"
 
 	circuit "github.com/rubyist/circuitbreaker"
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
 )
 
 const (
-	XVersion           = "X-RPCX-Version"
-	XMessageType       = "X-RPCX-MesssageType"
-	XHeartbeat         = "X-RPCX-Heartbeat"
-	XOneway            = "X-RPCX-Oneway"
-	XMessageStatusType = "X-RPCX-MessageStatusType"
-	XSerializeType     = "X-RPCX-SerializeType"
-	XMessageID         = "X-RPCX-MessageID"
-	XServicePath       = "X-RPCX-ServicePath"
-	XServiceMethod     = "X-RPCX-ServiceMethod"
-	XMeta              = "X-RPCX-Meta"
-	XErrorMessage      = "X-RPCX-ErrorMessage"
+	XVersion           = "X-FLARE-Version"
+	XMessageType       = "X-FLARE-MesssageType"
+	XHeartbeat         = "X-FLARE-Heartbeat"
+	XOneway            = "X-FLARE-Oneway"
+	XMessageStatusType = "X-FLARE-MessageStatusType"
+	XSerializeType     = "X-FLARE-SerializeType"
+	XMessageID         = "X-FLARE-MessageID"
+	XServicePath       = "X-FLARE-ServicePath"
+	XServiceMethod     = "X-FLARE-ServiceMethod"
+	XMeta              = "X-FLARE-Meta"
+	XErrorMessage      = "X-FLARE-ErrorMessage"
 )
 
 // ServiceError is an error from server.
@@ -50,6 +50,7 @@ var DefaultOption = Option{
 	BackupLatency:       10 * time.Millisecond,
 	MaxWaitForHeartbeat: 30 * time.Second,
 	TCPKeepAlivePeriod:  time.Minute,
+	BidirectionalBlock:  false,
 }
 
 // Breaker is a CircuitBreaker interface.
@@ -124,13 +125,13 @@ func NewClient(option Option) *Client {
 }
 
 // RemoteAddr returns the remote address.
-func (c *Client) RemoteAddr() string {
-	return c.Conn.RemoteAddr().String()
+func (client *Client) RemoteAddr() string {
+	return client.Conn.RemoteAddr().String()
 }
 
 // GetConn returns the underlying conn.
-func (c *Client) GetConn() net.Conn {
-	return c.Conn
+func (client *Client) GetConn() net.Conn {
+	return client.Conn
 }
 
 // Option contains all options for creating clients.
@@ -170,6 +171,8 @@ type Option struct {
 
 	// TCPKeepAlive, if it is zero we don't set keepalive
 	TCPKeepAlivePeriod time.Duration
+	// bidirectional mode, if true serverMessageChan will block to wait message for consume. default false.
+	BidirectionalBlock bool
 }
 
 // Call represents an active RPC.
@@ -687,7 +690,7 @@ func (client *Client) input() {
 	client.mutex.Unlock()
 
 	if err != nil && !closing {
-		log.Error("flare: client protocol error:", err)
+		log.Errorf("flare: client protocol error: %v", err)
 	}
 }
 
@@ -701,10 +704,14 @@ func (client *Client) handleServerRequest(msg *protocol.Message) {
 
 	serverMessageChan := client.ServerMessageChan
 	if serverMessageChan != nil {
-		select {
-		case serverMessageChan <- msg:
-		default:
-			log.Warnf("ServerMessageChan may be full so the server request %d has been dropped", msg.Seq())
+		if client.option.BidirectionalBlock {
+			serverMessageChan <- msg
+		} else {
+			select {
+			case serverMessageChan <- msg:
+			default:
+				log.Warnf("ServerMessageChan may be full so the server request %d has been dropped", msg.Seq())
+			}
 		}
 	}
 }

@@ -3,7 +3,7 @@ package codec
 import (
 	"testing"
 
-	"github.com/flare-rpc/flare-go/codec/testdata"
+	"github.com/flare-rpc/flarego/codec/testdata"
 )
 
 type ColorGroup struct {

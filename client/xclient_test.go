@@ -8,10 +8,10 @@ import (
 
 	"fmt"
 
-	testutils "github.com/flare-rpc/flare-go/_testutils"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/server"
-	"github.com/flare-rpc/flare-go/share"
+	testutils "github.com/flare-rpc/flarego/_testutils"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/server"
+	"github.com/flare-rpc/flarego/share"
 )
 
 func TestXClient_Thrift(t *testing.T) {

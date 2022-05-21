@@ -21,7 +21,7 @@ doc:
 	godoc -http=:6060
 
 deps:
-	go list -f '{{ join .Deps  "\n"}}' ./... |grep "/" | grep -v "github.com/flare-rpc/flare-go"| grep "\." | sort |uniq
+	go list -f '{{ join .Deps  "\n"}}' ./... |grep "/" | grep -v "github.com/flare-rpc/flarego"| grep "\." | sort |uniq
 
 fmt:
 	go fmt ./...
@@ -33,7 +33,7 @@ build-all:
 	go build -tags "kcp quic" ./...
 
 test:
-	go test -race -tags "kcp quic" ./...
+	go test -race ./...
 
 cover:
 	gocov test -tags "kcp quic" ./... | gocov-html > cover.html

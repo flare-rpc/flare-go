@@ -12,9 +12,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
 	"github.com/soheilhy/cmux"
 )
 
@@ -26,7 +26,7 @@ func (s *Server) startGateway(network string, ln net.Listener) net.Listener {
 
 	m := cmux.New(ln)
 
-	rpcxLn := m.Match(rpcxPrefixByteMatcher())
+	flareLn := m.Match(flarePrefixByteMatcher())
 
 	// mux Plugins
 	if s.Plugins != nil {
@@ -45,10 +45,10 @@ func (s *Server) startGateway(network string, ln net.Listener) net.Listener {
 
 	go m.Serve()
 
-	return rpcxLn
+	return flareLn
 }
 
-func rpcxPrefixByteMatcher() cmux.Matcher {
+func flarePrefixByteMatcher() cmux.Matcher {
 	magic := protocol.MagicNumber()
 	return func(r io.Reader) bool {
 		buf := make([]byte, 1)
@@ -77,7 +77,7 @@ func (s *Server) startHTTP1APIGateway(ln net.Listener) {
 	}
 
 	if err := s.gatewayHTTPServer.Serve(ln); err != nil {
-		if err == ErrServerClosed || strings.Contains(err.Error(), "listener closed") {
+		if err == ErrServerClosed || errors.Is(err, cmux.ErrListenerClosed) {
 			log.Info("gateway server closed")
 		} else {
 			log.Errorf("error in gateway Serve: %T %s", err, err)
@@ -110,7 +110,7 @@ func (s *Server) handleGatewayRequest(w http.ResponseWriter, r *http.Request, pa
 	}
 	servicePath := r.Header.Get(XServicePath)
 	wh := w.Header()
-	req, err := HTTPRequest2RpcxRequest(r)
+	req, err := HTTPRequest2FlareRequest(r)
 	defer protocol.FreeMsg(req)
 
 	// set headers
@@ -138,7 +138,7 @@ func (s *Server) handleGatewayRequest(w http.ResponseWriter, r *http.Request, pa
 	if err != nil {
 		rh := r.Header
 		for k, v := range rh {
-			if strings.HasPrefix(k, "X-RPCX-") && len(v) > 0 {
+			if strings.HasPrefix(k, "X-FLARE-") && len(v) > 0 {
 				wh.Set(k, v[0])
 			}
 		}
@@ -149,7 +149,9 @@ func (s *Server) handleGatewayRequest(w http.ResponseWriter, r *http.Request, pa
 	}
 	err = s.Plugins.DoPostReadRequest(ctx, req, nil)
 	if err != nil {
+		s.Plugins.DoPreWriteResponse(ctx, req, nil, err)
 		http.Error(w, err.Error(), 500)
+		s.Plugins.DoPostWriteResponse(ctx, req, req.Clone(), err)
 		return
 	}
 

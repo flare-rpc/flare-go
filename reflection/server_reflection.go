@@ -13,7 +13,7 @@ import (
 
 	"github.com/ChimeraCoder/gojson"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/flare-rpc/flare-go/log"
+	"github.com/flare-rpc/flarego/log"
 )
 
 var (

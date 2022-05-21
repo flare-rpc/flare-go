@@ -10,8 +10,8 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/share"
 )
 
 var ErrNotAccept = errors.New("server refused the connection")
@@ -40,6 +40,7 @@ type StreamService struct {
 
 	startOnce sync.Once
 
+	ln   net.Listener
 	done chan struct{}
 }
 
@@ -103,6 +104,7 @@ func (s *StreamService) start() error {
 	if err != nil {
 		return err
 	}
+	s.ln = ln
 
 	var tempDelay time.Duration
 
@@ -172,6 +174,8 @@ func (s *StreamService) start() error {
 
 func (s *StreamService) Stop() error {
 	close(s.done)
-
+	if s.ln != nil {
+		s.ln.Close()
+	}
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/snappy"
-	"github.com/flare-rpc/flare-go/util"
+	"github.com/flare-rpc/flarego/util"
 )
 
 // Compressor defines a common compression interface.
