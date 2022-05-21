@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/flare-rpc/flarego/log"
 	"github.com/flare-rpc/flarego/share"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 var ErrNotAccept = errors.New("server refused the connection")

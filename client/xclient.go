@@ -15,11 +15,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/juju/ratelimit"
 	ex "github.com/flare-rpc/flarego/errors"
 	"github.com/flare-rpc/flarego/log"
 	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/share"
+	"github.com/juju/ratelimit"
 	"golang.org/x/sync/singleflight"
 )
 

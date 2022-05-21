@@ -26,4 +26,3 @@ func TestOption(t *testing.T) {
 	o(server)
 	assert.Equal(t, time.Second, server.writeTimeout)
 }
-

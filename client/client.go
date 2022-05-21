@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	circuit "github.com/rubyist/circuitbreaker"
 	"github.com/flare-rpc/flarego/log"
 	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/share"
+	circuit "github.com/rubyist/circuitbreaker"
 )
 
 const (

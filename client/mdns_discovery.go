@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/grandcat/zeroconf"
 	"github.com/flare-rpc/flarego/log"
+	"github.com/grandcat/zeroconf"
 )
 
 type serviceMeta struct {

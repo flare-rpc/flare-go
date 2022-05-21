@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	metrics "github.com/rcrowley/go-metrics"
 	"github.com/flare-rpc/flarego/server"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 func TestConsulRegistry(t *testing.T) {

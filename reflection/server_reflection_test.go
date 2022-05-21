@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
 	testutils "github.com/flare-rpc/flarego/_testutils"
+	"github.com/kr/pretty"
 	"github.com/stretchr/testify/assert"
 )
 

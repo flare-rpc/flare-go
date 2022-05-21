@@ -9,8 +9,8 @@ import (
 
 	"github.com/flare-rpc/flarego/share"
 
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/flare-rpc/flarego/protocol"
+	multierror "github.com/hashicorp/go-multierror"
 )
 
 // OneClient wraps servicesPath and XClients.

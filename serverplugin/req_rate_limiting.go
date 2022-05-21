@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/juju/ratelimit"
 	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/server"
+	"github.com/juju/ratelimit"
 )
 
 // ReqRateLimitingPlugin can limit requests per unit time

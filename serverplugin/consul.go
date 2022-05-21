@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-rpc/flarego/log"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store"
 	"github.com/rpcxio/libkv/store/consul"
-	"github.com/flare-rpc/flarego/log"
 )
 
 func init() {

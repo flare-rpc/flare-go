@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/rs/cors"
 	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/share"
+	"github.com/rs/cors"
 )
 
 func (s *Server) jsonrpcHandler(w http.ResponseWriter, r *http.Request) {

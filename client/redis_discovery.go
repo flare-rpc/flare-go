@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-rpc/flarego/log"
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store"
 	"github.com/rpcxio/libkv/store/redis"
-	"github.com/flare-rpc/flarego/log"
 )
 
 func init() {

@@ -13,9 +13,9 @@ import (
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store/zookeeper"
 
+	"github.com/flare-rpc/flarego/log"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rpcxio/libkv/store"
-	"github.com/flare-rpc/flarego/log"
 )
 
 func init() {

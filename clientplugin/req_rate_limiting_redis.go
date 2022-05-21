@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/go-redis/redis_rate/v9"
 	"github.com/flare-rpc/flarego/client"
 	"github.com/flare-rpc/flarego/server"
+	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis_rate/v9"
 )
 
 var _ client.PreCallPlugin = (*RedisRateLimitingPlugin)(nil)
