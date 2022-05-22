@@ -12,8 +12,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/ChimeraCoder/gojson"
+	"github.com/flare-rpc/flarego/log"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/flare-rpc/flare-go/log"
 )
 
 var (

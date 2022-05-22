@@ -39,8 +39,8 @@ func Inject(ctx context.Context, propagators propagation.TextMapPropagator) {
 	meta := ctx.Value(ReqMetaDataKey)
 	if meta == nil {
 		meta = make(map[string]string)
-		if rpcxContext, ok := ctx.(*Context); ok {
-			rpcxContext.SetValue(ReqMetaDataKey, meta)
+		if flareContext, ok := ctx.(*Context); ok {
+			flareContext.SetValue(ReqMetaDataKey, meta)
 		}
 	}
 
@@ -53,8 +53,8 @@ func Extract(ctx context.Context, propagators propagation.TextMapPropagator) tra
 	meta := ctx.Value(ReqMetaDataKey)
 	if meta == nil {
 		meta = make(map[string]string)
-		if rpcxContext, ok := ctx.(*Context); ok {
-			rpcxContext.SetValue(ReqMetaDataKey, meta)
+		if flareContext, ok := ctx.(*Context); ok {
+			flareContext.SetValue(ReqMetaDataKey, meta)
 		}
 	}
 

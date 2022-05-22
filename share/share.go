@@ -1,13 +1,13 @@
 package share
 
 import (
-	"github.com/flare-rpc/flare-go/codec"
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/codec"
+	"github.com/flare-rpc/flarego/protocol"
 )
 
 const (
 	// DefaultRPCPath is used by ServeHTTP.
-	DefaultRPCPath = "/_rpcx_"
+	DefaultRPCPath = "/_flare_"
 
 	// AuthKey is used in metadata.
 	AuthKey = "__AUTH"

@@ -18,17 +18,11 @@ func GetFreePort() (port int, err error) {
 	}
 	defer listener.Close()
 
-	addr := listener.Addr().String()
-	_, portString, err := net.SplitHostPort(addr)
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.Atoi(portString)
+	return listener.Addr().(*net.TCPAddr).Port, nil
 }
 
-// ParseRpcxAddress parses flare address such as tcp@127.0.0.1:8972  quic@192.168.1.1:9981
-func ParseRpcxAddress(addr string) (network string, ip string, port int, err error) {
+// ParseFlareAddress parses flare address such as tcp@127.0.0.1:8972  quic@192.168.1.1:9981
+func ParseFlareAddress(addr string) (network string, ip string, port int, err error) {
 	ati := strings.Index(addr, "@")
 	if ati <= 0 {
 		return "", "", 0, fmt.Errorf("invalid flare address: %s", addr)

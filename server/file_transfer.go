@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-rpc/flarego/log"
+	"github.com/flare-rpc/flarego/share"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/flare-rpc/flare-go/log"
-	"github.com/flare-rpc/flare-go/share"
 )
 
 // FileTransferHandler handles uploading file. Must close the connection after it finished.
@@ -42,6 +42,7 @@ type FileTransfer struct {
 
 	startOnce sync.Once
 
+	ln   net.Listener
 	done chan struct{}
 }
 
@@ -128,6 +129,7 @@ func (s *FileTransfer) start() error {
 	if err != nil {
 		return err
 	}
+	s.ln = ln
 
 	var tempDelay time.Duration
 
@@ -203,6 +205,10 @@ func (s *FileTransfer) start() error {
 
 func (s *FileTransfer) Stop() error {
 	close(s.done)
+	// notify Accept() to return
+	if s.ln != nil {
+		s.ln.Close()
+	}
 
 	return nil
 }

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/flare-rpc/flarego/server"
 	metrics "github.com/rcrowley/go-metrics"
-	"github.com/flare-rpc/flare-go/server"
 )
 
 func TestConsulRegistry(t *testing.T) {
@@ -14,7 +14,7 @@ func TestConsulRegistry(t *testing.T) {
 	r := &ConsulRegisterPlugin{
 		ServiceAddress: "tcp@127.0.0.1:8972",
 		ConsulServers:  []string{"127.0.0.1:8500"},
-		BasePath:       "/rpcx_test",
+		BasePath:       "/flare_test",
 		Metrics:        metrics.NewRegistry(),
 		UpdateInterval: time.Minute,
 	}

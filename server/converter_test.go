@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/flare-rpc/flare-go/codec"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/codec"
+	"github.com/flare-rpc/flarego/share"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHTTPRequest2RpcxRequest(t *testing.T) {
+func TestHTTPRequest2FlareRequest(t *testing.T) {
 
 	cc := &codec.MsgpackCodec{}
 
@@ -37,16 +37,16 @@ func TestHTTPRequest2RpcxRequest(t *testing.T) {
 	h.Set(XServicePath, "ProxyServer")
 	h.Set(XServiceMethod, "GetAdData")
 
-	rpcxReq, err := HTTPRequest2RpcxRequest(req)
+	flareReq, err := HTTPRequest2FlareRequest(req)
 	if err != nil {
-		t.Fatal("HTTPRequest2RpcxRequest() error")
+		t.Fatal("HTTPRequest2FlareRequest() error")
 	}
 
-	assert.NotNil(t, rpcxReq.Metadata)
+	assert.NotNil(t, flareReq.Metadata)
 
-	assert.Equal(t, h.Get("Authorization"), rpcxReq.Metadata[share.AuthKey])
+	assert.Equal(t, h.Get("Authorization"), flareReq.Metadata[share.AuthKey])
 
-	assert.Equal(t, h.Get(XServicePath), rpcxReq.ServicePath)
+	assert.Equal(t, h.Get(XServicePath), flareReq.ServicePath)
 
-	assert.Equal(t, h.Get(XServiceMethod), rpcxReq.ServiceMethod)
+	assert.Equal(t, h.Get(XServiceMethod), flareReq.ServiceMethod)
 }

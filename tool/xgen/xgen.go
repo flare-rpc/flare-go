@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/flare-rpc/flare-go/tool/xgen/parser"
+	"github.com/flare-rpc/flarego/tool/xgen/parser"
 )
 
 var (
@@ -102,8 +102,8 @@ func generate(parsers []*parser.Parser) error {
 	fmt.Fprintln(w, `  "time"`)
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, `  metrics "github.com/rcrowley/go-metrics"`)
-	fmt.Fprintln(w, `  "github.com/flare-rpc/flare-go/server"`)
-	fmt.Fprintln(w, `  "github.com/flare-rpc/flare-go/serverplugin"`)
+	fmt.Fprintln(w, `  "github.com/flare-rpc/flarego/server"`)
+	fmt.Fprintln(w, `  "github.com/flare-rpc/flarego/serverplugin"`)
 
 	var importedPackages = make(map[string]bool)
 	for _, p := range parsers {

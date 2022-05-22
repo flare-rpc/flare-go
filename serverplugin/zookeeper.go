@@ -13,9 +13,9 @@ import (
 	"github.com/rpcxio/libkv"
 	"github.com/rpcxio/libkv/store/zookeeper"
 
+	"github.com/flare-rpc/flarego/log"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/rpcxio/libkv/store"
-	"github.com/flare-rpc/flare-go/log"
 )
 
 func init() {
@@ -57,6 +57,7 @@ func (p *ZooKeeperRegisterPlugin) Start() error {
 		kv, err := libkv.NewStore(store.ZK, p.ZooKeeperServers, p.Options)
 		if err != nil {
 			log.Errorf("cannot create zk registry: %v", err)
+			close(p.done)
 			return err
 		}
 		p.kv = kv
@@ -66,9 +67,10 @@ func (p *ZooKeeperRegisterPlugin) Start() error {
 		p.BasePath = p.BasePath[1:]
 	}
 
-	err := p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err := p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create zk path %s: %v", p.BasePath, err)
+		close(p.done)
 		return err
 	}
 
@@ -193,7 +195,7 @@ func (p *ZooKeeperRegisterPlugin) Register(name string, rcvr interface{}, metada
 	if p.BasePath[0] == '/' {
 		p.BasePath = p.BasePath[1:]
 	}
-	err = p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create zk path %s: %v", p.BasePath, err)
 		return err
@@ -207,6 +209,8 @@ func (p *ZooKeeperRegisterPlugin) Register(name string, rcvr interface{}, metada
 	}
 
 	nodePath = fmt.Sprintf("%s/%s/%s", p.BasePath, name, p.ServiceAddress)
+	// call delete first when previous is nil, if key exists already, create new key will fail.
+	p.kv.Delete(nodePath)
 	_, _, err = p.kv.AtomicPut(nodePath, []byte(metadata), nil, &store.WriteOptions{TTL: p.UpdateInterval * 2})
 	if err != nil {
 		log.Errorf("cannot create zk path %s: %v", nodePath, err)
@@ -250,7 +254,7 @@ func (p *ZooKeeperRegisterPlugin) Unregister(name string) (err error) {
 	if p.BasePath[0] == '/' {
 		p.BasePath = p.BasePath[1:]
 	}
-	err = p.kv.Put(p.BasePath, []byte("rpcx_path"), &store.WriteOptions{IsDir: true})
+	err = p.kv.Put(p.BasePath, []byte("flare_path"), &store.WriteOptions{IsDir: true})
 	if err != nil {
 		log.Errorf("cannot create zk path %s: %v", p.BasePath, err)
 		return err
@@ -267,7 +271,7 @@ func (p *ZooKeeperRegisterPlugin) Unregister(name string) (err error) {
 
 	err = p.kv.Delete(nodePath)
 	if err != nil {
-		log.Errorf("cannot create consul path %s: %v", nodePath, err)
+		log.Errorf("cannot remove zk path %s: %v", nodePath, err)
 		return err
 	}
 

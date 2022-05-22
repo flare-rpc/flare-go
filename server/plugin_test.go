@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/flare-rpc/flare-go/client"
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/client"
+	"github.com/flare-rpc/flarego/protocol"
 )
 
 type HeartbeatHandler struct{}

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/share"
 )
 
 // Context represents a flare FastCall context.
@@ -37,12 +37,11 @@ func (ctx *Context) SetValue(key, val interface{}) {
 
 // DeleteKey delete the kv pair by key.
 func (ctx *Context) DeleteKey(key interface{}) {
-	if ctx.ctx==nil || key == nil{
+	if ctx.ctx == nil || key == nil {
 		return
 	}
 	ctx.ctx.DeleteKey(key)
 }
-
 
 // Payload returns the  payload.
 func (ctx *Context) Payload() []byte {

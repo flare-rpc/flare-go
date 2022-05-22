@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/flare-rpc/flarego/log"
 	"github.com/grandcat/zeroconf"
-	"github.com/flare-rpc/flare-go/log"
 )
 
 type serviceMeta struct {
@@ -18,7 +18,7 @@ type serviceMeta struct {
 }
 
 // MDNSDiscovery is a mdns service discovery.
-// It always returns the registered servers in etcd.
+// It always returns the registered servers in mdns.
 type MDNSDiscovery struct {
 	Timeout       time.Duration
 	WatchInterval time.Duration
@@ -174,7 +174,7 @@ func (d *MDNSDiscovery) browse() ([]*KVPair, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), d.Timeout)
 	defer cancel()
-	err = resolver.Browse(ctx, "_rpcxservices", d.domain, entries)
+	err = resolver.Browse(ctx, "_flareservices", d.domain, entries)
 	if err != nil {
 		log.Warnf("Failed to browse: %v", err)
 	}

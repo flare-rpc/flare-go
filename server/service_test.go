@@ -23,7 +23,6 @@ func Test_isExported(t *testing.T) {
 	assert.Equal(t, false, isExported("&_isExported"))
 }
 
-
 func Mul(ctx context.Context, args *Args, reply *Reply) error {
 	reply.C = args.A * args.B
 	return nil

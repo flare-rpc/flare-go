@@ -3,7 +3,7 @@ package client
 import (
 	"context"
 
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/share"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"

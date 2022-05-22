@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-rpc/flare-go/log"
+	"github.com/flare-rpc/flarego/log"
 )
 
 // MultipleServersDiscovery is a multiple servers service discovery.

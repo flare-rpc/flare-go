@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/flare-rpc/flare-go/log"
+	"github.com/flare-rpc/flarego/log"
 )
 
 // DNSDiscovery is based on DNS a record.

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"io/ioutil"
 
+	"github.com/flare-rpc/flarego/util"
 	"github.com/golang/snappy"
-	"github.com/flare-rpc/flare-go/util"
 )
 
 // Compressor defines a common compression interface.

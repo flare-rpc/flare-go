@@ -56,7 +56,7 @@ func NewMDNSRegisterPlugin(serviceAddress string, port int, m metrics.Registry, 
 	}
 }
 
-// Start starts to connect etcd cluster
+// Start starts the mdns loop.
 func (p *MDNSRegisterPlugin) Start() error {
 
 	if p.server == nil && len(p.Services) != 0 {
@@ -134,7 +134,7 @@ func (p *MDNSRegisterPlugin) initMDNS() {
 		panic(err)
 	}
 
-	server, err := zeroconf.Register(host, "_rpcxservices", p.domain, p.port, []string{s}, nil)
+	server, err := zeroconf.Register(host, "_flareservices", p.domain, p.port, []string{s}, nil)
 	if err != nil {
 		panic(err)
 	}

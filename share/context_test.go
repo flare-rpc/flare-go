@@ -13,17 +13,17 @@ var (
 )
 
 func TestContext(t *testing.T) {
-	rpcxContext := NewContext(context.Background())
-	assert.NotNil(t, rpcxContext.Context)
-	assert.NotNil(t, rpcxContext.tags)
+	flareContext := NewContext(context.Background())
+	assert.NotNil(t, flareContext.Context)
+	assert.NotNil(t, flareContext.tags)
 
-	rpcxContext.SetValue("string", TheAnswer)
-	rpcxContext.SetValue(42, MagicNumber)
-	assert.Equal(t, MagicNumber, rpcxContext.Value(42))
-	assert.Equal(t, TheAnswer, rpcxContext.Value("string"))
+	flareContext.SetValue("string", TheAnswer)
+	flareContext.SetValue(42, MagicNumber)
+	assert.Equal(t, MagicNumber, flareContext.Value(42))
+	assert.Equal(t, TheAnswer, flareContext.Value("string"))
 
-	rpcxContext.SetValue("string", TheAnswer)
-	t.Log(rpcxContext.String())
+	flareContext.SetValue("string", TheAnswer)
+	t.Log(flareContext.String())
 }
 
 func TestWithValue(t *testing.T) {

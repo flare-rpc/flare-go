@@ -3,7 +3,7 @@ package serverplugin
 import (
 	"context"
 
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/protocol"
 )
 
 var aliasAppliedKey = "__aliasAppliedKey"

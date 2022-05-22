@@ -4,9 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/server"
-	"github.com/flare-rpc/flare-go/share"
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/server"
+	"github.com/flare-rpc/flarego/share"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"

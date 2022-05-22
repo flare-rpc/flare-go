@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/flare-rpc/flare-go/codec"
-	"github.com/flare-rpc/flare-go/protocol/testdata"
+	"github.com/flare-rpc/flarego/codec"
+	"github.com/flare-rpc/flarego/protocol/testdata"
 )
 
 func newBenchmarkMessage() *testdata.BenchmarkMessage {

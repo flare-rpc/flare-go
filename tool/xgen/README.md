@@ -8,7 +8,7 @@ It search structs in your specified files and add them as services. Currently it
 
 ```sh
 # install
-go get -u github.com/flare-rpc/flare-go/tool/xgen/...
+go get -u github.com/flare-rpc/flarego/tool/xgen/...
 
 # run
 xgen -o server.go <file>.go

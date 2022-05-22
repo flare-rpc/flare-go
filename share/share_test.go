@@ -3,11 +3,11 @@ package share
 import (
 	"testing"
 
-	"github.com/flare-rpc/flare-go/protocol"
+	"github.com/flare-rpc/flarego/protocol"
 	"github.com/stretchr/testify/assert"
 )
 
-type MockCodec struct {}
+type MockCodec struct{}
 
 func (codec MockCodec) Encode(i interface{}) ([]byte, error) {
 	return nil, nil
@@ -23,5 +23,5 @@ func TestShare(t *testing.T) {
 
 	mockCodecType := 127
 	RegisterCodec(protocol.SerializeType(mockCodecType), codec)
-	assert.Equal(t, registeredCodecNum + 1, len(Codecs))
+	assert.Equal(t, registeredCodecNum+1, len(Codecs))
 }

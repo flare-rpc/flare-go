@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/flare-rpc/flare-go/util"
+	"github.com/flare-rpc/flarego/util"
 	"github.com/valyala/bytebufferpool"
 )
 
@@ -42,7 +42,7 @@ var (
 
 const (
 	// ServiceError contains error info of service invocation
-	ServiceError = "__rpcx_error__"
+	ServiceError = "__flare_error__"
 )
 
 // MessageType is message type of requests and responses.

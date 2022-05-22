@@ -5,10 +5,10 @@ import (
 	"net"
 	"time"
 
+	"github.com/flare-rpc/flarego/protocol"
+	"github.com/flare-rpc/flarego/server"
 	"github.com/rcrowley/go-metrics"
 	"github.com/rcrowley/go-metrics/exp"
-	"github.com/flare-rpc/flare-go/protocol"
-	"github.com/flare-rpc/flare-go/server"
 )
 
 // MetricsPlugin has an issue. It changes seq of requests and it is wrong!!!!
