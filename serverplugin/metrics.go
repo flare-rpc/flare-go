@@ -51,8 +51,8 @@ func (p *MetricsPlugin) PreReadRequest(ctx context.Context) error {
 
 // PostReadRequest counts read
 func (p *MetricsPlugin) PostReadRequest(ctx context.Context, r *protocol.Message, e error) error {
-	sp := r.ServicePath
-	sm := r.ServiceMethod
+	sp := r.GetServiceName()
+	sm := r.GetServiceMethod()
 
 	if sp == "" {
 		return nil
@@ -64,8 +64,8 @@ func (p *MetricsPlugin) PostReadRequest(ctx context.Context, r *protocol.Message
 
 // PostWriteResponse count write
 func (p *MetricsPlugin) PostWriteResponse(ctx context.Context, req *protocol.Message, res *protocol.Message, e error) error {
-	sp := res.ServicePath
-	sm := res.ServiceMethod
+	sp := res.GetServiceName()
+	sm := res.GetServiceMethod()
 
 	if sp == "" {
 		return nil

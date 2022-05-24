@@ -19,8 +19,6 @@ type ConnFactoryFn func(c *Client, network, address string) (net.Conn, error)
 
 var ConnFactories = map[string]ConnFactoryFn{
 	"http": newDirectHTTPConn,
-	"kcp":  newDirectKCPConn,
-	"quic": newDirectQuicConn,
 	"unix": newDirectConn,
 	"memu": newMemuConn,
 }
@@ -67,10 +65,6 @@ func (client *Client) Connect(network, address string) error {
 
 		// start reading and writing since connected
 		go client.input()
-
-		if client.option.Heartbeat && client.option.HeartbeatInterval > 0 {
-			go client.heartbeat()
-		}
 
 	}
 

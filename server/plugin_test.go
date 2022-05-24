@@ -44,8 +44,6 @@ func TestPluginHeartbeat(t *testing.T) {
 		defer wg.Done()
 		// client
 		opts := client.DefaultOption
-		opts.Heartbeat = true
-		opts.HeartbeatInterval = time.Second
 		opts.IdleTimeout = time.Duration(5) * time.Second
 		opts.ConnectTimeout = time.Duration(5) * time.Second
 		// PeerDiscovery

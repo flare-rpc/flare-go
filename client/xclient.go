@@ -697,11 +697,11 @@ func (c *xClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]
 	ctx = setServerTimeout(ctx)
 
 	if share.Trace {
-		log.Debugf("select a client for %s.%s, failMode: %v, args: %+v in case of xclient SendRaw", r.ServicePath, r.ServiceMethod, c.failMode, r.Payload)
+		log.Debugf("select a client for %s.%s, failMode: %v, args: %+v in case of xclient SendRaw", r.GetServiceName(), r.GetServiceMethod(), c.failMode, r.Payload)
 	}
 
 	var err error
-	k, client, err := c.selectClient(ctx, r.ServicePath, r.ServiceMethod, r.Payload)
+	k, client, err := c.selectClient(ctx, r.GetServiceName(), r.GetServiceMethod(), r.Payload)
 	if err != nil {
 		if c.failMode == Failfast {
 			return nil, nil, err
@@ -715,7 +715,7 @@ func (c *xClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]
 	}
 
 	if share.Trace {
-		log.Debugf("selected a client %s for %s.%s, failMode: %v, args: %+v in case of xclient Call", client.RemoteAddr(), r.ServicePath, r.ServiceMethod, c.failMode, r.Payload)
+		log.Debugf("selected a client %s for %s.%s, failMode: %v, args: %+v in case of xclient Call", client.RemoteAddr(), r.GetServiceName(), r.GetServiceMethod(), c.failMode, r.Payload)
 	}
 
 	var e error
@@ -738,9 +738,9 @@ func (c *xClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]
 			}
 
 			if uncoverError(err) {
-				c.removeClient(k, r.ServicePath, r.ServiceMethod, client)
+				c.removeClient(k, r.GetServiceName(), r.GetServiceMethod(), client)
 			}
-			client, e = c.getCachedClient(k, r.ServicePath, r.ServiceMethod, r.Payload)
+			client, e = c.getCachedClient(k, r.GetServiceName(), r.GetServiceMethod(), r.Payload)
 		}
 
 		if err == nil {
@@ -765,10 +765,10 @@ func (c *xClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]
 			}
 
 			if uncoverError(err) {
-				c.removeClient(k, r.ServicePath, r.ServiceMethod, client)
+				c.removeClient(k, r.GetServiceName(), r.GetServiceMethod(), client)
 			}
 			// select another server
-			k, client, e = c.selectClient(ctx, r.ServicePath, r.ServiceMethod, r.Payload)
+			k, client, e = c.selectClient(ctx, r.GetServiceName(), r.GetServiceMethod(), r.Payload)
 		}
 
 		if err == nil {
@@ -780,7 +780,7 @@ func (c *xClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]
 		m, payload, err := c.wrapSendRaw(ctx, client, r)
 		if err != nil {
 			if uncoverError(err) {
-				c.removeClient(k, r.ServicePath, r.ServiceMethod, client)
+				c.removeClient(k, r.GetServiceName(), r.GetServiceMethod(), client)
 			}
 		}
 
@@ -816,16 +816,16 @@ func (c *xClient) wrapSendRaw(ctx context.Context, client RPCClient, r *protocol
 	}
 
 	if share.Trace {
-		log.Debugf("call a client for %s.%s, args: %+v in case of xclient wrapSendRaw", c.servicePath, r.ServiceMethod, r.Payload)
+		log.Debugf("call a client for %s.%s, args: %+v in case of xclient wrapSendRaw", c.servicePath, r.GetServiceMethod(), r.Payload)
 	}
 
 	ctx = share.NewContext(ctx)
-	c.Plugins.DoPreCall(ctx, c.servicePath, r.ServiceMethod, r.Payload)
+	c.Plugins.DoPreCall(ctx, c.servicePath, r.GetServiceMethod(), r.Payload)
 	m, payload, err := client.SendRaw(ctx, r)
-	c.Plugins.DoPostCall(ctx, c.servicePath, r.ServiceMethod, r.Payload, nil, err)
+	c.Plugins.DoPostCall(ctx, c.servicePath, r.GetServiceMethod(), r.Payload, nil, err)
 
 	if share.Trace {
-		log.Debugf("called a client for %s.%s, args: %+v, err: %v in case of xclient wrapSendRaw", c.servicePath, r.ServiceMethod, r.Payload, err)
+		log.Debugf("called a client for %s.%s, args: %+v, err: %v in case of xclient wrapSendRaw", c.servicePath, r.GetServiceMethod(), r.Payload, err)
 	}
 
 	return m, payload, err

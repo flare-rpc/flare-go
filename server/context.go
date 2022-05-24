@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"github.com/flare-rpc/flarego/codec"
 	"net"
 
 	"github.com/flare-rpc/flarego/protocol"
@@ -55,24 +55,20 @@ func (ctx *Context) Metadata() map[string]string {
 
 // ServicePath returns the ServicePath.
 func (ctx *Context) ServicePath() string {
-	return ctx.req.ServicePath
+	return ctx.req.GetServiceName()
 }
 
 // ServiceMethod returns the ServiceMethod.
 func (ctx *Context) ServiceMethod() string {
-	return ctx.req.ServiceMethod
+	return ctx.req.GetServiceMethod()
 }
 
 // Bind parses the body data and stores the result to v.
 func (ctx *Context) Bind(v interface{}) error {
 	req := ctx.req
 	if v != nil {
-		codec := share.Codecs[req.SerializeType()]
-		if codec == nil {
-			return fmt.Errorf("can not find codec for %d", req.SerializeType())
-		}
-
-		err := codec.Decode(req.Payload, v)
+		coder := codec.PBCodec{}
+		err := coder.Decode(req.Payload, v)
 		if err != nil {
 			return err
 		}
@@ -83,20 +79,11 @@ func (ctx *Context) Bind(v interface{}) error {
 func (ctx *Context) Write(v interface{}) error {
 	req := ctx.req
 
-	if req.IsOneway() { // no need to send response
-		return nil
-	}
-
-	codec := share.Codecs[req.SerializeType()]
-	if codec == nil {
-		return fmt.Errorf("can not find codec for %d", req.SerializeType())
-	}
-
+	coder := codec.PBCodec{}
 	res := req.Clone()
-	res.SetMessageType(protocol.Response)
 
 	if v != nil {
-		data, err := codec.Encode(v)
+		data, err := coder.Encode(v)
 		if err != nil {
 			return err
 		}
@@ -118,8 +105,8 @@ func (ctx *Context) Write(v interface{}) error {
 		}
 	}
 
-	if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
-		res.SetCompressType(req.CompressType())
+	if len(res.Payload) > 1024 && req.GetCompressType() != protocol.CompressType_COMPRESS_TYPE_NONE {
+		res.SetCompressType(req.GetCompressType())
 	}
 	respData := res.EncodeSlicePointer()
 
@@ -136,19 +123,7 @@ func (ctx *Context) Write(v interface{}) error {
 
 func (ctx *Context) WriteError(err error) error {
 	req := ctx.req
-
-	if req.IsOneway() { // no need to send response
-		return nil
-	}
-
-	codec := share.Codecs[req.SerializeType()]
-	if codec == nil {
-		return fmt.Errorf("can not find codec for %d", req.SerializeType())
-	}
-
 	res := req.Clone()
-	res.SetMessageType(protocol.Response)
-
 	resMetadata := ctx.Get(share.ResMetaDataKey)
 	if resMetadata != nil {
 		resMetaInCtx := resMetadata.(map[string]string)
@@ -164,8 +139,8 @@ func (ctx *Context) WriteError(err error) error {
 		}
 	}
 
-	res.SetMessageStatusType(protocol.Error)
-	res.Metadata[protocol.ServiceError] = err.Error()
+	res.SetResponseStatus(protocol.Error)
+	res.SetResponseErrorMsg(err.Error())
 
 	respData := res.EncodeSlicePointer()
 	ctx.conn.Write(*respData)

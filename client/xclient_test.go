@@ -6,57 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"fmt"
-
-	testutils "github.com/flare-rpc/flarego/_testutils"
-	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/server"
-	"github.com/flare-rpc/flarego/share"
 )
-
-func TestXClient_Thrift(t *testing.T) {
-	s := server.NewServer()
-	s.RegisterName("Arith", new(Arith), "")
-	go s.Serve("tcp", "127.0.0.1:0")
-	defer s.Close()
-	time.Sleep(500 * time.Millisecond)
-
-	addr := s.Address().String()
-
-	opt := Option{
-		Retries:        1,
-		RPCPath:        share.DefaultRPCPath,
-		ConnectTimeout: 10 * time.Second,
-		SerializeType:  protocol.Thrift,
-		CompressType:   protocol.None,
-		BackupLatency:  10 * time.Millisecond,
-	}
-
-	d, err := NewPeer2PeerDiscovery("tcp@"+addr, "desc=a test service")
-	if err != nil {
-		t.Fatalf("failed to NewPeer2PeerDiscovery: %v", err)
-	}
-
-	xclient := NewXClient("Arith", Failtry, RandomSelect, d, opt)
-
-	defer xclient.Close()
-
-	args := testutils.ThriftArgs_{}
-	args.A = 200
-	args.B = 100
-
-	reply := testutils.ThriftReply{}
-
-	err = xclient.Call(context.Background(), "ThriftMul", &args, &reply)
-	if err != nil {
-		t.Fatalf("failed to call: %v", err)
-	}
-
-	fmt.Println(reply.C)
-	if reply.C != 20000 {
-		t.Fatalf("expect 20000 but got %d", reply.C)
-	}
-}
 
 func TestXClient_IT(t *testing.T) {
 	s := server.NewServer()
@@ -76,12 +27,12 @@ func TestXClient_IT(t *testing.T) {
 
 	defer xclient.Close()
 
-	args := &Args{
+	args := &server.Args{
 		A: 10,
 		B: 20,
 	}
 
-	reply := &Reply{}
+	reply := &server.Reply{}
 	err = xclient.Call(context.Background(), "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)

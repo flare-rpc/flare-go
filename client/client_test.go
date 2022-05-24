@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"github.com/flare-rpc/flarego/codec"
 	"math/rand"
 	"sync"
 	"testing"
@@ -12,18 +13,10 @@ import (
 	"github.com/flare-rpc/flarego/server"
 )
 
-type Args struct {
-	A int
-	B int
-}
-
-type Reply struct {
-	C int
-}
 
 type Arith int
 
-func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
+func (t *Arith) Mul(ctx context.Context, args *server.Args, reply *server.Reply) error {
 	reply.C = args.A * args.B
 	return nil
 }
@@ -64,12 +57,12 @@ func TestClient_IT(t *testing.T) {
 	}
 	defer client.Close()
 
-	args := &Args{
+	args := &server.Args{
 		A: 10,
 		B: 20,
 	}
 
-	reply := &Reply{}
+	reply := &server.Reply{}
 	err = client.Call(context.Background(), "Arith", "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)
@@ -84,8 +77,7 @@ func TestClient_IT(t *testing.T) {
 		t.Fatal("expect an error but got nil")
 	}
 
-	client.option.SerializeType = protocol.MsgPack
-	reply = &Reply{}
+	reply = &server.Reply{}
 	err = client.Call(context.Background(), "Arith", "Mul", args, reply)
 	if err != nil {
 		t.Fatalf("failed to call: %v", err)
@@ -94,8 +86,6 @@ func TestClient_IT(t *testing.T) {
 	if reply.C != 200 {
 		t.Fatalf("expect 200 but got %d", reply.C)
 	}
-
-	client.option.SerializeType = protocol.ProtoBuffer
 
 	pbArgs := &testutils.ProtoArgs{
 		A: 10,
@@ -137,28 +127,27 @@ func TestClient_IT_Concurrency(t *testing.T) {
 	wg.Add(100)
 	for i := 0; i < 100; i++ {
 		i := i
-		go testSendRaw(t, client, uint64(i), rand.Int31(), rand.Int31(), &wg)
+		go testSendRaw(t, client, int64(i), rand.Int31(), rand.Int31(), &wg)
 	}
 	wg.Wait()
 
 }
 
-func testSendRaw(t *testing.T, client *Client, seq uint64, x, y int32, wg *sync.WaitGroup) {
+func testSendRaw(t *testing.T, client *Client, seq int64, x, y int32, wg *sync.WaitGroup) {
 	defer wg.Done()
-	flareReq := protocol.GetPooledMsg()
-	flareReq.SetMessageType(protocol.Request)
-	flareReq.SetSeq(seq)
-	flareReq.ServicePath = "PBArith"
-	flareReq.ServiceMethod = "Mul"
-	flareReq.SetSerializeType(protocol.ProtoBuffer)
-	flareReq.SetOneway(false)
+	//flareReq := protocol.GetPooledMsg()
+	flareReq := protocol.NewMessage()
+	flareReq.SetCorrelationId(seq)
+	flareReq.SetServiceName("PBArith")
+	flareReq.SetServiceMethod("Mul")
 	defer protocol.FreeMsg(flareReq)
 
 	pbArgs := &testutils.ProtoArgs{
 		A: x,
 		B: y,
 	}
-	data, _ := pbArgs.Marshal()
+	coder := codec.PBCodec{}
+	data, _ := coder.Encode(pbArgs)
 	flareReq.Payload = data
 	_, reply, err := client.SendRaw(context.Background(), flareReq)
 	if err != nil {

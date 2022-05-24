@@ -2,13 +2,19 @@ package protocol
 
 import "sync"
 
+
 var msgPool = sync.Pool{
 	New: func() interface{} {
 		header := Header([12]byte{})
-		header[0] = magicNumber
-
+		setMagicString(&header)
+		req := &RpcRequestMeta{}
+		res :=  &RpcResponseMeta{}
 		return &Message{
 			Header: &header,
+			Meta: RpcMeta{
+				Request: req,
+				Response: res,
+			},
 		}
 	},
 }

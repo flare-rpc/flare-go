@@ -5,7 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
+	"github.com/flare-rpc/flarego/codec"
 	"io"
 	"net"
 	"net/http"
@@ -164,6 +164,7 @@ func (s *Server) ActiveClientConn() []net.Conn {
 //   ctx.Value(RemoteConnContextKey)
 //
 // servicePath, serviceMethod, metadata can be set to zero values.
+/*
 func (s *Server) SendMessage(conn net.Conn, servicePath, serviceMethod string, metadata map[string]string, data []byte) error {
 	ctx := share.WithValue(context.Background(), StartSendRequestContextKey, time.Now().UnixNano())
 	s.Plugins.DoPreWriteRequest(ctx)
@@ -188,7 +189,7 @@ func (s *Server) SendMessage(conn net.Conn, servicePath, serviceMethod string, m
 	protocol.FreeMsg(req)
 	return err
 }
-
+*/
 func (s *Server) getDoneChan() <-chan struct{} {
 	return s.doneChan
 }
@@ -329,8 +330,8 @@ func (s *Server) serveByWS(ln net.Listener, rpcPath string) {
 }
 
 func (s *Server) sendResponse(ctx *share.Context, conn net.Conn, writeCh chan *[]byte, err error, req, res *protocol.Message) {
-	if len(res.Payload) > 1024 && req.CompressType() != protocol.None {
-		res.SetCompressType(req.CompressType())
+	if len(res.Payload) > 1024 && req.GetCompressType() != protocol.CompressType_COMPRESS_TYPE_NONE {
+		res.SetCompressType(req.GetCompressType())
 	}
 	data := res.EncodeSlicePointer()
 	s.Plugins.DoPreWriteResponse(ctx, req, res, err)
@@ -417,16 +418,11 @@ func (s *Server) serveConn(conn net.Conn) {
 			} else if errors.Is(err, net.ErrClosed) {
 				log.Infof("flare: connection %s is closed", conn.RemoteAddr().String())
 			} else if errors.Is(err, ErrReqReachLimit) {
-				if !req.IsOneway() {
-					res := req.Clone()
-					res.SetMessageType(protocol.Response)
+				res := req.Clone()
 
-					handleError(res, err)
-					s.sendResponse(ctx, conn, writeCh, err, req, res)
-					protocol.FreeMsg(res)
-				} else {
-					s.Plugins.DoPreWriteResponse(ctx, req, nil, err)
-				}
+				handleError(res, err)
+				s.sendResponse(ctx, conn, writeCh, err, req, res)
+				protocol.FreeMsg(res)
 				protocol.FreeMsg(req)
 				continue
 			} else {
@@ -444,21 +440,15 @@ func (s *Server) serveConn(conn net.Conn) {
 
 		ctx = share.WithLocalValue(ctx, StartRequestContextKey, time.Now().UnixNano())
 		closeConn := false
-		if !req.IsHeartbeat() {
-			err = s.auth(ctx, req)
-			closeConn = err != nil
-		}
+		err = s.auth(ctx, req)
+		closeConn = err != nil
 
 		if err != nil {
-			if !req.IsOneway() {
-				res := req.Clone()
-				res.SetMessageType(protocol.Response)
-				handleError(res, err)
-				s.sendResponse(ctx, conn, writeCh, err, req, res)
-				protocol.FreeMsg(res)
-			} else {
-				s.Plugins.DoPreWriteResponse(ctx, req, nil, err)
-			}
+			res := req.Clone()
+			handleError(res, err)
+			s.sendResponse(ctx, conn, writeCh, err, req, res)
+			protocol.FreeMsg(res)
+
 			protocol.FreeMsg(req)
 			// auth failed, closed the connection
 			if closeConn {
@@ -479,23 +469,6 @@ func (s *Server) serveConn(conn net.Conn) {
 			atomic.AddInt32(&s.handlerMsgNum, 1)
 			defer atomic.AddInt32(&s.handlerMsgNum, -1)
 
-			if req.IsHeartbeat() {
-				s.Plugins.DoHeartbeatRequest(ctx, req)
-				req.SetMessageType(protocol.Response)
-				data := req.EncodeSlicePointer()
-				if s.AsyncWrite {
-					writeCh <- data
-				} else {
-					if s.writeTimeout != 0 {
-						conn.SetWriteDeadline(time.Now().Add(s.writeTimeout))
-					}
-					conn.Write(*data)
-					protocol.PutData(data)
-				}
-				protocol.FreeMsg(req)
-				return
-			}
-
 			resMetadata := make(map[string]string)
 			ctx = share.WithLocalValue(share.WithLocalValue(ctx, share.ReqMetaDataKey, req.Metadata),
 				share.ResMetaDataKey, resMetadata)
@@ -512,11 +485,11 @@ func (s *Server) serveConn(conn net.Conn) {
 			}
 
 			// first use handler
-			if handler, ok := s.router[req.ServicePath+"."+req.ServiceMethod]; ok {
+			if handler, ok := s.router[req.GetServiceName()+"."+req.GetServiceMethod()]; ok {
 				sctx := NewContext(ctx, conn, req, writeCh)
 				err := handler(sctx)
 				if err != nil {
-					log.Errorf("[handler internal error]: servicepath: %s, servicemethod, err: %v", req.ServicePath, req.ServiceMethod, err)
+					log.Errorf("[handler internal error]: servicepath: %s, servicemethod, err: %v", req.GetServiceName(), req.GetServiceMethod(), err)
 				}
 
 				protocol.FreeMsg(req)
@@ -532,22 +505,20 @@ func (s *Server) serveConn(conn net.Conn) {
 				}
 			}
 
-			if !req.IsOneway() {
-				if len(resMetadata) > 0 { // copy meta in context to request
-					meta := res.Metadata
-					if meta == nil {
-						res.Metadata = resMetadata
-					} else {
-						for k, v := range resMetadata {
-							if meta[k] == "" {
-								meta[k] = v
-							}
+			if len(resMetadata) > 0 { // copy meta in context to request
+				meta := res.Metadata
+				if meta == nil {
+					res.Metadata = resMetadata
+				} else {
+					for k, v := range resMetadata {
+						if meta[k] == "" {
+							meta[k] = v
 						}
 					}
 				}
-
-				s.sendResponse(ctx, conn, writeCh, err, req, res)
 			}
+
+			s.sendResponse(ctx, conn, writeCh, err, req, res)
 
 			if share.Trace {
 				log.Debugf("server write response %+v for an request %+v from conn: %v", res, req, conn.RemoteAddr().String())
@@ -639,12 +610,11 @@ func (s *Server) auth(ctx context.Context, req *protocol.Message) error {
 }
 
 func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res *protocol.Message, err error) {
-	serviceName := req.ServicePath
-	methodName := req.ServiceMethod
+	serviceName := req.GetServiceName()
+	methodName := req.GetServiceMethod()
 
 	res = req.Clone()
 
-	res.SetMessageType(protocol.Response)
 	s.serviceMapMu.RLock()
 	service := s.serviceMap[serviceName]
 
@@ -669,13 +639,9 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 	// get a argv object from object pool
 	argv := reflectTypePools.Get(mtype.ArgType)
 
-	codec := share.Codecs[req.SerializeType()]
-	if codec == nil {
-		err = fmt.Errorf("can not find codec for %d", req.SerializeType())
-		return handleError(res, err)
-	}
+	coder := &codec.PBCodec{}
 
-	err = codec.Decode(req.Payload, argv)
+	err = coder.Decode(req.Payload, argv)
 	if err != nil {
 		return handleError(res, err)
 	}
@@ -705,7 +671,7 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 
 	if err != nil {
 		if replyv != nil {
-			data, err := codec.Encode(replyv)
+			data, err := coder.Encode(replyv)
 			// return reply to object pool
 			reflectTypePools.Put(mtype.ReplyType, replyv)
 			if err != nil {
@@ -716,17 +682,13 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 		return handleError(res, err)
 	}
 
-	if !req.IsOneway() {
-		data, err := codec.Encode(replyv)
-		// return reply to object pool
-		reflectTypePools.Put(mtype.ReplyType, replyv)
-		if err != nil {
-			return handleError(res, err)
-		}
-		res.Payload = data
-	} else if replyv != nil {
-		reflectTypePools.Put(mtype.ReplyType, replyv)
+	data, err := coder.Encode(replyv)
+	// return reply to object pool
+	reflectTypePools.Put(mtype.ReplyType, replyv)
+	if err != nil {
+		return handleError(res, err)
 	}
+	res.Payload = data
 
 	if share.Trace {
 		log.Debugf("server called service %+v for an request %+v", service, req)
@@ -738,10 +700,8 @@ func (s *Server) handleRequest(ctx context.Context, req *protocol.Message) (res 
 func (s *Server) handleRequestForFunction(ctx context.Context, req *protocol.Message) (res *protocol.Message, err error) {
 	res = req.Clone()
 
-	res.SetMessageType(protocol.Response)
-
-	serviceName := req.ServicePath
-	methodName := req.ServiceMethod
+	serviceName := req.GetServiceName()
+	methodName := req.GetServiceMethod()
 	s.serviceMapMu.RLock()
 	service := s.serviceMap[serviceName]
 	s.serviceMapMu.RUnlock()
@@ -757,13 +717,9 @@ func (s *Server) handleRequestForFunction(ctx context.Context, req *protocol.Mes
 
 	argv := reflectTypePools.Get(mtype.ArgType)
 
-	codec := share.Codecs[req.SerializeType()]
-	if codec == nil {
-		err = fmt.Errorf("can not find codec for %d", req.SerializeType())
-		return handleError(res, err)
-	}
+	coder := &codec.PBCodec{}
 
-	err = codec.Decode(req.Payload, argv)
+	err = coder.Decode(req.Payload, argv)
 	if err != nil {
 		return handleError(res, err)
 	}
@@ -783,26 +739,22 @@ func (s *Server) handleRequestForFunction(ctx context.Context, req *protocol.Mes
 		return handleError(res, err)
 	}
 
-	if !req.IsOneway() {
-		data, err := codec.Encode(replyv)
-		reflectTypePools.Put(mtype.ReplyType, replyv)
-		if err != nil {
-			return handleError(res, err)
-		}
-		res.Payload = data
-	} else if replyv != nil {
-		reflectTypePools.Put(mtype.ReplyType, replyv)
+	data, err := coder.Encode(replyv)
+	reflectTypePools.Put(mtype.ReplyType, replyv)
+	if err != nil {
+		return handleError(res, err)
 	}
+	res.Payload = data
 
 	return res, nil
 }
 
 func handleError(res *protocol.Message, err error) (*protocol.Message, error) {
-	res.SetMessageStatusType(protocol.Error)
+	res.SetResponseStatus(protocol.Error)
 	if res.Metadata == nil {
 		res.Metadata = make(map[string]string)
 	}
-	res.Metadata[protocol.ServiceError] = err.Error()
+	res.SetResponseErrorMsg(err.Error())
 	return res, err
 }
 

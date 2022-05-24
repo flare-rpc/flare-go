@@ -46,7 +46,7 @@ func TestHTTPRequest2FlareRequest(t *testing.T) {
 
 	assert.Equal(t, h.Get("Authorization"), flareReq.Metadata[share.AuthKey])
 
-	assert.Equal(t, h.Get(XServicePath), flareReq.ServicePath)
+	assert.Equal(t, h.Get(XServicePath), flareReq.GetServiceName())
 
-	assert.Equal(t, h.Get(XServiceMethod), flareReq.ServiceMethod)
+	assert.Equal(t, h.Get(XServiceMethod), flareReq.GetServiceMethod())
 }

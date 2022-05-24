@@ -32,11 +32,11 @@ var Trace bool
 
 // Codecs are codecs supported by flare. You can add customized codecs in Codecs.
 var Codecs = map[protocol.SerializeType]codec.Codec{
-	protocol.SerializeNone: &codec.ByteCodec{},
-	protocol.JSON:          &codec.JSONCodec{},
-	protocol.ProtoBuffer:   &codec.PBCodec{},
-	protocol.MsgPack:       &codec.MsgpackCodec{},
-	protocol.Thrift:        &codec.ThriftCodec{},
+	protocol.SerializeType_SerializeNone: &codec.ByteCodec{},
+	protocol.SerializeType_JSON:          &codec.JSONCodec{},
+	protocol.SerializeType_ProtoBuffer:   &codec.PBCodec{},
+	protocol.SerializeType_MsgPack:       &codec.MsgpackCodec{},
+	protocol.SerializeType_Thrift:        &codec.ThriftCodec{},
 }
 
 // RegisterCodec register customized codec.

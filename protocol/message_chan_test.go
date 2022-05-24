@@ -22,7 +22,12 @@ func TestChanValue(t *testing.T) {
 		p := strings.Repeat("_", 100)
 		payload := make([]byte, 1024)
 		for {
-			ch <- Message{ServiceMethod: m, ServicePath: p, Payload: payload}
+			ch <- Message{Meta: RpcMeta{
+				Request: &RpcRequestMeta{
+					ServiceName: m, MethodName: p,
+				},
+			},
+			Payload: payload}
 		}
 	}(ch)
 	for i := 0; i < 5; i++ {
@@ -46,7 +51,12 @@ func TestChanPtr(t *testing.T) {
 		p := strings.Repeat("_", 100)
 		payload := make([]byte, 1024)
 		for {
-			ch <- &Message{ServiceMethod: m, ServicePath: p, Payload: payload}
+			ch <- &Message{Meta: RpcMeta{
+				Request: &RpcRequestMeta{
+					ServiceName: m, MethodName: p,
+				},
+			},
+				Payload: payload}
 		}
 	}(ch)
 
@@ -71,7 +81,12 @@ func BenchmarkChanValue(b *testing.B) {
 	p := strings.Repeat("_", 100)
 	payload := make([]byte, 1024)
 	for i := 0; i < b.N; i++ {
-		ch <- Message{ServiceMethod: m, ServicePath: p, Payload: payload}
+		ch <- Message{Meta: RpcMeta{
+			Request: &RpcRequestMeta{
+				ServiceName: m, MethodName: p,
+			},
+		},
+			Payload: payload}
 	}
 }
 
@@ -89,6 +104,11 @@ func BenchmarkChanPtr(b *testing.B) {
 	p := strings.Repeat("_", 100)
 	payload := make([]byte, 1024)
 	for i := 0; i < b.N; i++ {
-		ch <- &Message{ServiceMethod: m, ServicePath: p, Payload: payload}
+		ch <- &Message{Meta: RpcMeta{
+			Request: &RpcRequestMeta{
+				ServiceName: m, MethodName: p,
+			},
+		},
+			Payload: payload}
 	}
 }

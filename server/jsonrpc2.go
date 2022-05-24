@@ -60,10 +60,10 @@ func (s *Server) handleJSONRPCRequest(ctx context.Context, r *jsonrpcRequest, he
 	}
 
 	if r.ID == nil {
-		req.SetOneway(true)
+		//req.SetOneway(true)
 	}
-	req.SetMessageType(protocol.Request)
-	req.SetSerializeType(protocol.JSON)
+	//req.SetMessageType(protocol.Request)
+	//req.SetSerializeType(protocol.JSON)
 
 	lastDot := strings.LastIndex(r.Method, ".")
 	if lastDot <= 0 {
@@ -73,8 +73,8 @@ func (s *Server) handleJSONRPCRequest(ctx context.Context, r *jsonrpcRequest, he
 		}
 		return res
 	}
-	req.ServicePath = r.Method[:lastDot]
-	req.ServiceMethod = r.Method[lastDot+1:]
+	req.SetServiceName(r.Method[:lastDot])
+	req.SetServiceMethod(r.Method[lastDot+1:])
 	req.Payload = *r.Params
 
 	// meta

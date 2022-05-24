@@ -2,32 +2,32 @@ package protocol
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/flare-rpc/flarego/codec"
 	"testing"
 )
 
 func TestMessage(t *testing.T) {
 	req := NewMessage()
-	req.SetVersion(0)
-	req.SetMessageType(Request)
-	req.SetHeartbeat(false)
-	req.SetOneway(false)
-	req.SetCompressType(None)
-	req.SetMessageStatusType(Normal)
-	req.SetSerializeType(JSON)
+	req.SetCompressType(CompressType_COMPRESS_TYPE_NONE)
+	req.SetResponseStatus(Normal)
 
-	req.SetSeq(1234567890)
+	req.SetCorrelationId(1234567890)
 
 	m := make(map[string]string)
-	req.ServicePath = "Arith"
-	req.ServiceMethod = "Add"
+	req.SetServiceName("Arith")
+	req.SetServiceMethod("Add")
 	m["__ID"] = "6ba7b810-9dad-11d1-80b4-00c04fd430c9"
 	req.Metadata = m
 
-	payload := `{
-		"A": 1,
-		"B": 2,
+	pb := TestProto{
+		A: 1,
+		B: 2,
 	}
-	`
+
+	coder := codec.PBCodec{}
+	payload, _ :=coder.Encode(&pb)
+
 	req.Payload = []byte(payload)
 
 	var buf bytes.Buffer
@@ -36,25 +36,31 @@ func TestMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	fmt.Println("buffer len: ", buf.Len())
+
 	res, err := Read(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
-	res.SetMessageType(Response)
 
-	if res.Version() != 0 {
-		t.Errorf("expect 0 but got %d", res.Version())
+	if req.GetCorrelationId() != 1234567890 {
+		t.Errorf("expect 1234567890 but got %d", res.GetCorrelationId())
 	}
 
-	if res.Seq() != 1234567890 {
-		t.Errorf("expect 1234567890 but got %d", res.Seq())
-	}
-
-	if res.ServicePath != "Arith" || res.ServiceMethod != "Add" || res.Metadata["__ID"] != "6ba7b810-9dad-11d1-80b4-00c04fd430c9" {
+	if req.GetServiceName() != "Arith" || req.GetServiceMethod() != "Add" || req.Metadata["__ID"] != "6ba7b810-9dad-11d1-80b4-00c04fd430c9" {
 		t.Errorf("got wrong metadata: %v", res.Metadata)
 	}
 
-	if string(res.Payload) != payload {
+	if res.GetCorrelationId() != 1234567890 {
+		t.Errorf("expect 1234567890 but got %d", res.GetCorrelationId())
+	}
+
+
+	if res.GetServiceName() != "Arith" || res.GetServiceMethod() != "Add" || res.Metadata["__ID"] != "6ba7b810-9dad-11d1-80b4-00c04fd430c9" {
+		t.Errorf("got wrong metadata: %v", res.Metadata)
+	}
+
+	if string(res.Payload) != string(payload) {
 		t.Errorf("got wrong payload: %v", string(res.Payload))
 	}
 }

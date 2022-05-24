@@ -27,35 +27,15 @@ const (
 // HTTPRequest2FlareRequest converts a http request to a flare request.
 func HTTPRequest2FlareRequest(r *http.Request) (*protocol.Message, error) {
 	req := protocol.GetPooledMsg()
-	req.SetMessageType(protocol.Request)
 
 	h := r.Header
 	seq := h.Get(XMessageID)
 	if seq != "" {
-		id, err := strconv.ParseUint(seq, 10, 64)
+		id, err := strconv.ParseInt(seq, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		req.SetSeq(id)
-	}
-
-	heartbeat := h.Get(XHeartbeat)
-	if heartbeat != "" {
-		req.SetHeartbeat(true)
-	}
-
-	oneway := h.Get(XOneway)
-	if oneway != "" {
-		req.SetOneway(true)
-	}
-
-	st := h.Get(XSerializeType)
-	if st != "" {
-		rst, err := strconv.Atoi(st)
-		if err != nil {
-			return nil, err
-		}
-		req.SetSerializeType(protocol.SerializeType(rst))
+		req.SetCorrelationId(id)
 	}
 
 	meta := h.Get(XMeta)
@@ -81,9 +61,9 @@ func HTTPRequest2FlareRequest(r *http.Request) (*protocol.Message, error) {
 		req.Metadata[share.AuthKey] = auth
 	}
 
-	req.ServicePath = h.Get(XServicePath)
+	req.SetServiceName(h.Get(XServicePath))
 
-	req.ServiceMethod = h.Get(XServiceMethod)
+	req.SetServiceMethod(h.Get(XServiceMethod))
 
 	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -115,7 +95,7 @@ func HTTPRequest2FlareRequest(r *http.Request) (*protocol.Message, error) {
 // 	}
 
 // 	m.Set(XSerializeType, strconv.Itoa(int(res.SerializeType())))
-// 	m.Set(XMessageID, strconv.FormatUint(res.Seq(), 10))
+// 	m.Set(XMessageID, strconv.FormatUint(res.GetRequestId(), 10))
 // 	m.Set(XServicePath, res.ServicePath)
 // 	m.Set(XServiceMethod, res.ServiceMethod)
 

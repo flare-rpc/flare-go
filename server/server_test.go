@@ -3,31 +3,24 @@ package server
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"testing"
 	"time"
 
 	testutils "github.com/flare-rpc/flarego/_testutils"
+	"github.com/flare-rpc/flarego/codec"
 	"github.com/flare-rpc/flarego/protocol"
 	"github.com/flare-rpc/flarego/share"
 	"github.com/stretchr/testify/assert"
 )
 
-type Args struct {
-	A int
-	B int
-}
-
-type Reply struct {
-	C int
-}
-
 type Arith int
 
 func (t *Arith) Mul(ctx context.Context, args *Args, reply *Reply) error {
 	reply.C = args.A * args.B
+	fmt.Println("server Mul")
 	return nil
 }
 
@@ -63,84 +56,23 @@ func TestShutdownHook(t *testing.T) {
 	}
 }
 
-func TestHandleRequest(t *testing.T) {
-	// use jsoncodec
-
-	req := protocol.NewMessage()
-	req.SetVersion(0)
-	req.SetMessageType(protocol.Request)
-	req.SetHeartbeat(false)
-	req.SetOneway(false)
-	req.SetCompressType(protocol.None)
-	req.SetMessageStatusType(protocol.Normal)
-	req.SetSerializeType(protocol.JSON)
-	req.SetSeq(1234567890)
-
-	req.ServicePath = "Arith"
-	req.ServiceMethod = "Mul"
-
-	argv := &Args{
-		A: 10,
-		B: 20,
-	}
-
-	data, err := json.Marshal(argv)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	req.Payload = data
-
-	server := NewServer()
-	server.RegisterName("Arith", new(Arith), "")
-	res, err := server.handleRequest(context.Background(), req)
-	if err != nil {
-		t.Fatalf("failed to hand request: %v", err)
-	}
-
-	if res.Payload == nil {
-		t.Fatalf("expect reply but got %s", res.Payload)
-	}
-
-	reply := &Reply{}
-
-	codec := share.Codecs[res.SerializeType()]
-	if codec == nil {
-		t.Fatalf("can not find codec %c", codec)
-	}
-
-	err = codec.Decode(res.Payload, reply)
-	if err != nil {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	if reply.C != 200 {
-		t.Fatalf("expect 200 but got %d", reply.C)
-	}
-}
-
 func TestHandler(t *testing.T) {
 	// use jsoncodec
 
 	req := protocol.NewMessage()
-	req.SetVersion(0)
-	req.SetMessageType(protocol.Request)
-	req.SetHeartbeat(false)
-	req.SetOneway(false)
-	req.SetCompressType(protocol.None)
-	req.SetMessageStatusType(protocol.Normal)
-	req.SetSerializeType(protocol.JSON)
-	req.SetSeq(1234567890)
+	req.SetCompressType(protocol.CompressType_COMPRESS_TYPE_NONE)
+	req.SetResponseStatus(protocol.Normal)
+	req.SetCorrelationId(1234567890)
 
-	req.ServicePath = "Arith"
-	req.ServiceMethod = "Mul"
+	req.SetServiceName("Arith")
+	req.SetServiceMethod("Mul")
 
 	argv := &Args{
 		A: 10,
 		B: 20,
 	}
-
-	data, err := json.Marshal(argv)
+	coder := codec.PBCodec{}
+	data, err := coder.Encode(argv)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,11 +104,13 @@ func TestHandler(t *testing.T) {
 	resp, err := protocol.Read(bytes.NewReader(data))
 	assert.NoError(t, err)
 
-	assert.Equal(t, "Arith", resp.ServicePath)
-	assert.Equal(t, "Mul", resp.ServiceMethod)
-	assert.Equal(t, req.Seq(), resp.Seq())
+	assert.Equal(t, "Arith", resp.GetServiceName())
+	assert.Equal(t, "Mul", resp.GetServiceMethod())
+	assert.Equal(t, req.GetCorrelationId(), resp.GetCorrelationId())
 
-	assert.Equal(t, "{\"C\":200}", string(resp.Payload))
+	r := Reply{C:200}
+	rd, _:=coder.Encode(&r)
+	assert.Equal(t, string(rd), string(resp.Payload))
 }
 
 func Test_validIP6(t *testing.T) {

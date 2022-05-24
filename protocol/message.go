@@ -1,35 +1,24 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-
+	"github.com/flare-rpc/flarego/codec"
 	"github.com/flare-rpc/flarego/util"
 	"github.com/valyala/bytebufferpool"
+	"io"
+)
+
+const (
+	// Normal is normal requests and responses.
+	Normal int32 = iota
+	// Error indicates some errors occur.
+	Error
 )
 
 var bufferPool = util.NewLimitedPool(512, 4096)
-
-// Compressors are compressors supported by flare. You can add customized compressor in Compressors.
-var Compressors = map[CompressType]Compressor{
-	None: &RawDataCompressor{},
-	Gzip: &GzipCompressor{},
-}
-
-// MaxMessageLength is the max length of a message.
-// Default is 0 that means does not limit length of messages.
-// It is used to validate when read messages from io.Reader.
-var MaxMessageLength = 0
-
-const (
-	magicNumber byte = 0x08
-)
-
-func MagicNumber() byte {
-	return magicNumber
-}
 
 var (
 	// ErrMetaKVMissing some keys or values are missing.
@@ -38,343 +27,272 @@ var (
 	ErrMessageTooLong = errors.New("message is too long")
 
 	ErrUnsupportedCompressor = errors.New("unsupported compressor")
+	ErrMetaLenError          = errors.New("meta longer than body")
+	ErrMetaParseError        = errors.New("meta parse error")
 )
 
-const (
-	// ServiceError contains error info of service invocation
-	ServiceError = "__flare_error__"
-)
+var MaxMessageLength = 0
 
-// MessageType is message type of requests and responses.
-type MessageType byte
+var magicString = []byte("PRPC")
 
-const (
-	// Request is message type of request
-	Request MessageType = iota
-	// Response is message type of response
-	Response
-)
-
-// MessageStatusType is status of messages.
-type MessageStatusType byte
-
-const (
-	// Normal is normal requests and responses.
-	Normal MessageStatusType = iota
-	// Error indicates some errors occur.
-	Error
-)
-
-// CompressType defines decompression type.
-type CompressType byte
-
-const (
-	// None does not compress.
-	None CompressType = iota
-	// Gzip uses gzip compression.
-	Gzip
-)
-
-// SerializeType defines serialization type of payload.
-type SerializeType byte
-
-const (
-	// SerializeNone uses raw []byte and don't serialize/deserialize
-	SerializeNone SerializeType = iota
-	// JSON for payload.
-	JSON
-	// ProtoBuffer for payload.
-	ProtoBuffer
-	// MsgPack for payload
-	MsgPack
-	// Thrift
-	// Thrift for payload
-	Thrift
-)
-
-// Message is the generic type of Request and Response.
-type Message struct {
-	*Header
-	ServicePath   string
-	ServiceMethod string
-	Metadata      map[string]string
-	Payload       []byte
-	data          []byte
+// Compressors are compressors supported by flare. You can add customized compressor in Compressors.
+var Compressors = map[CompressType]Compressor{
+	CompressType_COMPRESS_TYPE_NONE: &RawDataCompressor{},
+	CompressType_COMPRESS_TYPE_GZIP: &GzipCompressor{},
 }
 
-// NewMessage creates an empty message.
-func NewMessage() *Message {
-	header := Header([12]byte{})
-	header[0] = magicNumber
-
-	return &Message{
-		Header: &header,
-	}
-}
-
-// Header is the first part of Message and has fixed size.
-// Format:
-//
+// Header magicString + bodylen + metalen
 type Header [12]byte
 
-// CheckMagicNumber checks whether header starts flare magic number.
-func (h Header) CheckMagicNumber() bool {
-	return h[0] == magicNumber
+func MagicString() []byte {
+	return magicString
+}
+func setMagicString(h *Header) {
+	copy(h[0:4], magicString)
 }
 
-// Version returns version of flare protocol.
-func (h Header) Version() byte {
-	return h[1]
+func newHeader(bodyLen, metaLen uint32) *Header {
+	header := Header{}
+	setMagicString(&header)
+	SetBodyLen(&header, bodyLen)
+	SetMetaLen(&header, metaLen)
+	return &header
 }
 
-// SetVersion sets version for this header.
-func (h *Header) SetVersion(v byte) {
-	h[1] = v
+func (h *Header) checkMagicString() bool {
+	return bytes.Compare(h[0:4], magicString) == 0
 }
 
-// MessageType returns the message type.
-func (h Header) MessageType() MessageType {
-	return MessageType(h[2]&0x80) >> 7
+func (h *Header) GetBodyLen() uint32 {
+	b := h[4:8]
+	return binary.BigEndian.Uint32(b)
 }
 
-// SetMessageType sets message type.
-func (h *Header) SetMessageType(mt MessageType) {
-	h[2] = h[2] | (byte(mt) << 7)
+func (h *Header) GetMetaLen() uint32 {
+	b := h[8:]
+	return binary.BigEndian.Uint32(b)
 }
 
-// IsHeartbeat returns whether the message is heartbeat message.
-func (h Header) IsHeartbeat() bool {
-	return h[2]&0x40 == 0x40
+func SetBodyLen(h *Header, l uint32) {
+	b := h[4:8]
+	binary.BigEndian.PutUint32(b, l)
 }
 
-// SetHeartbeat sets the heartbeat flag.
-func (h *Header) SetHeartbeat(hb bool) {
-	if hb {
-		h[2] = h[2] | 0x40
-	} else {
-		h[2] = h[2] &^ 0x40
+func SetMetaLen(h *Header, l uint32) {
+	b := h[8:]
+	binary.BigEndian.PutUint32(b, l)
+}
+
+type Message struct {
+	*Header
+	Meta     RpcMeta
+	Metadata map[string]string
+	Payload  []byte
+	data     []byte
+}
+
+// NewRequestMessage creates an message for request.
+func NewMessage() *Message {
+	header := Header([12]byte{})
+	setMagicString(&header)
+	return &Message{
+		Header: &header,
+		Meta: RpcMeta{
+			Request:  &RpcRequestMeta{},
+			Response: &RpcResponseMeta{},
+		},
 	}
 }
 
-// IsOneway returns whether the message is one-way message.
-// If true, server won't send responses.
-func (h Header) IsOneway() bool {
-	return h[2]&0x20 == 0x20
-}
-
-// SetOneway sets the oneway flag.
-func (h *Header) SetOneway(oneway bool) {
-	if oneway {
-		h[2] = h[2] | 0x20
-	} else {
-		h[2] = h[2] &^ 0x20
+// NewRequestMessage creates an message for request.
+func NewRequestMessage() *Message {
+	header := Header([12]byte{})
+	setMagicString(&header)
+	m := RpcMeta{
+		Request: &RpcRequestMeta{},
+	}
+	return &Message{
+		Header: &header,
+		Meta:   m,
 	}
 }
 
-// CompressType returns compression type of messages.
-func (h Header) CompressType() CompressType {
-	return CompressType((h[2] & 0x1C) >> 2)
+// NewRequestMessage creates an message for request.
+func NewResponseMessage() *Message {
+	header := Header([12]byte{})
+	setMagicString(&header)
+	m := RpcMeta{
+		Response: &RpcResponseMeta{},
+	}
+	return &Message{
+		Header: &header,
+		Meta:   m,
+	}
 }
 
-// SetCompressType sets the compression type.
-func (h *Header) SetCompressType(ct CompressType) {
-	h[2] = (h[2] &^ 0x1C) | ((byte(ct) << 2) & 0x1C)
+func (m *Message) GetServiceName() string {
+	return m.Meta.Request.GetServiceName()
 }
 
-// MessageStatusType returns the message status type.
-func (h Header) MessageStatusType() MessageStatusType {
-	return MessageStatusType(h[2] & 0x03)
+func (m *Message) SetServiceName(v string) {
+	m.Meta.Request.ServiceName = v
 }
 
-// SetMessageStatusType sets message status type.
-func (h *Header) SetMessageStatusType(mt MessageStatusType) {
-	h[2] = (h[2] &^ 0x03) | (byte(mt) & 0x03)
+func (m *Message) GetServiceMethod() string {
+	return m.Meta.Request.GetMethodName()
 }
 
-// SerializeType returns serialization type of payload.
-func (h Header) SerializeType() SerializeType {
-	return SerializeType((h[3] & 0xF0) >> 4)
+func (m *Message) SetServiceMethod(v string) {
+	m.Meta.Request.MethodName = v
 }
 
-// SetSerializeType sets the serialization type.
-func (h *Header) SetSerializeType(st SerializeType) {
-	h[3] = (h[3] &^ 0xF0) | (byte(st) << 4)
+func (m *Message) IsBadResponse() bool {
+	return m.Meta.Response.GetErrorCode() != 0
 }
 
-// Seq returns sequence number of messages.
-func (h Header) Seq() uint64 {
-	return binary.BigEndian.Uint64(h[4:])
+func (m *Message) GetResponseErrorMsg() string {
+	return m.Meta.Response.GetErrorText()
 }
 
-// SetSeq sets  sequence number.
-func (h *Header) SetSeq(seq uint64) {
-	binary.BigEndian.PutUint64(h[4:], seq)
+func (m *Message) SetResponseStatus(s int32) {
+	m.Meta.Response.ErrorCode = s
+}
+
+func (m *Message) GetResponseStatus() int32 {
+	return m.Meta.Response.GetErrorCode()
+}
+
+func (m *Message) SetResponseErrorMsg(s string) {
+	m.Meta.Response.ErrorText = s
+}
+
+func (m *Message) GetCompressType() CompressType {
+	return CompressType(m.Meta.GetCompressType())
+}
+
+func (m *Message) SetCompressType(t CompressType) {
+	m.Meta.CompressType = int32(t)
+}
+
+func (m *Message) GetCorrelationId() int64 {
+	return m.Meta.GetCorrelationId()
+}
+
+func (m *Message) SetCorrelationId(v int64) {
+	m.Meta.CorrelationId = v
+}
+
+func (m *Message) Reset() {
+	m.Payload = []byte{}
+	m.data = m.data[:0]
 }
 
 // Clone clones from an message.
 func (m Message) Clone() *Message {
 	header := *m.Header
-	c := GetPooledMsg()
-	header.SetCompressType(None)
+	c := NewMessage()
 	c.Header = &header
-	c.ServicePath = m.ServicePath
-	c.ServiceMethod = m.ServiceMethod
+	req := &RpcRequestMeta{}
+	*req =  *m.Meta.Request
+	res := &RpcResponseMeta{}
+	*res = *m.Meta.Response
+	c.Meta = m.Meta
+	c.Meta.Request = req
+	c.Meta.Response = res
 	return c
 }
 
-// Encode encodes messages.
-func (m Message) Encode() []byte {
-	data := m.EncodeSlicePointer()
-	return *data
-}
-
-// EncodeSlicePointer encodes messages as a byte slice pointer we can use pool to improve.
-func (m Message) EncodeSlicePointer() *[]byte {
-	bb := bytebufferpool.Get()
-	encodeMetadata(m.Metadata, bb)
-	meta := bb.Bytes()
-
-	spL := len(m.ServicePath)
-	smL := len(m.ServiceMethod)
-
-	var err error
-	payload := m.Payload
-	if m.CompressType() != None {
-		compressor := Compressors[m.CompressType()]
-		if compressor == nil {
-			m.SetCompressType(None)
-		} else {
-			payload, err = compressor.Zip(m.Payload)
-			if err != nil {
-				m.SetCompressType(None)
-				payload = m.Payload
-			}
-		}
-	}
-
-	totalL := (4 + spL) + (4 + smL) + (4 + len(meta)) + (4 + len(payload))
-
-	// header + dataLen + spLen + sp + smLen + sm + metaL + meta + payloadLen + payload
-	metaStart := 12 + 4 + (4 + spL) + (4 + smL)
-
-	payLoadStart := metaStart + (4 + len(meta))
-	l := 12 + 4 + totalL
-
-	data := bufferPool.Get(l)
-	copy(*data, m.Header[:])
-
-	// totalLen
-	binary.BigEndian.PutUint32((*data)[12:16], uint32(totalL))
-
-	binary.BigEndian.PutUint32((*data)[16:20], uint32(spL))
-	copy((*data)[20:20+spL], util.StringToSliceByte(m.ServicePath))
-
-	binary.BigEndian.PutUint32((*data)[20+spL:24+spL], uint32(smL))
-	copy((*data)[24+spL:metaStart], util.StringToSliceByte(m.ServiceMethod))
-
-	binary.BigEndian.PutUint32((*data)[metaStart:metaStart+4], uint32(len(meta)))
-	copy((*data)[metaStart+4:], meta)
-
-	bytebufferpool.Put(bb)
-
-	binary.BigEndian.PutUint32((*data)[payLoadStart:payLoadStart+4], uint32(len(payload)))
-	copy((*data)[payLoadStart+4:], payload)
-
-	return data
-}
-
-// PutData puts the byte slice into pool.
-func PutData(data *[]byte) {
-	bufferPool.Put(data)
-}
-
-// WriteTo writes message to writers.
-func (m Message) WriteTo(w io.Writer) (int64, error) {
-	nn, err := w.Write(m.Header[:])
-	n := int64(nn)
+// Read reads a message from r.
+func Read(r io.Reader) (*Message, error) {
+	msg := NewMessage()
+	err := msg.Decode(r)
 	if err != nil {
-		return n, err
+		return nil, err
+	}
+	return msg, nil
+}
+
+// Read reads a message from r.
+func ReadResponse(r io.Reader) (*Message, error) {
+	msg := NewResponseMessage()
+	err := msg.Decode(r)
+	if err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+// Decode decodes a message from reader.
+func (m *Message) Decode(r io.Reader) error {
+	// validate rest length for each step?
+
+	// parse header
+	_, err := io.ReadFull(r, m.Header[:4])
+	if err != nil {
+		return err
+	}
+	if !m.Header.checkMagicString() {
+		return fmt.Errorf("wrong magic string: %v", m.Header[:4])
 	}
 
-	bb := bytebufferpool.Get()
-	encodeMetadata(m.Metadata, bb)
-	meta := bb.Bytes()
+	_, err = io.ReadFull(r, m.Header[4:])
+	if err != nil {
+		return err
+	}
 
-	spL := len(m.ServicePath)
-	smL := len(m.ServiceMethod)
+	// bodyLen
+	lenData := m.Header[4:8]
+	bodyLen := int(binary.BigEndian.Uint32(lenData))
+	metaLenData := m.Header[8:]
+	metaLen := int(binary.BigEndian.Uint32(metaLenData))
+	if MaxMessageLength > 0 && int(bodyLen) > MaxMessageLength {
+		return ErrMessageTooLong
+	}
 
-	payload := m.Payload
-	if m.CompressType() != None {
-		compressor := Compressors[m.CompressType()]
+	if metaLen > bodyLen {
+		return ErrMetaLenError
+	}
+
+	totalL := int(bodyLen)
+	if cap(m.data) >= totalL { // reuse data
+		m.data = m.data[:totalL]
+	} else {
+		m.data = make([]byte, totalL)
+	}
+	data := m.data
+	_, err = io.ReadFull(r, data)
+	if err != nil {
+		return err
+	}
+
+	meta := m.data[:metaLen]
+	metaDecoder := codec.PBCodec{}
+	err = metaDecoder.Decode(meta, &m.Meta)
+	if err != nil {
+		return err
+	}
+
+	attachLen := m.Meta.GetAttachmentSize()
+
+	if attachLen > 0 {
+		attach := m.data[metaLen : metaLen+int(attachLen)]
+		m.Metadata, err = decodeMetadata(uint32(attachLen), attach)
+	}
+
+	m.Payload = m.data[metaLen+int(attachLen):]
+	cType := m.GetCompressType()
+	if cType != CompressType_COMPRESS_TYPE_NONE {
+		compressor := Compressors[cType]
 		if compressor == nil {
-			return n, ErrUnsupportedCompressor
+			return ErrUnsupportedCompressor
 		}
-		payload, err = compressor.Zip(m.Payload)
+		m.Payload, err = compressor.Unzip(m.Payload)
 		if err != nil {
-			return n, err
+			return err
 		}
 	}
 
-	totalL := (4 + spL) + (4 + smL) + (4 + len(meta)) + (4 + len(payload))
-	err = binary.Write(w, binary.BigEndian, uint32(totalL))
-	if err != nil {
-		return n, err
-	}
-
-	// write servicePath and serviceMethod
-	err = binary.Write(w, binary.BigEndian, uint32(len(m.ServicePath)))
-	if err != nil {
-		return n, err
-	}
-	_, err = w.Write(util.StringToSliceByte(m.ServicePath))
-	if err != nil {
-		return n, err
-	}
-	err = binary.Write(w, binary.BigEndian, uint32(len(m.ServiceMethod)))
-	if err != nil {
-		return n, err
-	}
-	_, err = w.Write(util.StringToSliceByte(m.ServiceMethod))
-	if err != nil {
-		return n, err
-	}
-
-	// write meta
-	err = binary.Write(w, binary.BigEndian, uint32(len(meta)))
-	if err != nil {
-		return n, err
-	}
-	_, err = w.Write(meta)
-	if err != nil {
-		return n, err
-	}
-
-	bytebufferpool.Put(bb)
-
-	// write payload
-	err = binary.Write(w, binary.BigEndian, uint32(len(payload)))
-	if err != nil {
-		return n, err
-	}
-
-	nn, err = w.Write(payload)
-	return int64(nn), err
-}
-
-// len,string,len,string,......
-func encodeMetadata(m map[string]string, bb *bytebufferpool.ByteBuffer) {
-	if len(m) == 0 {
-		return
-	}
-	d := poolUint32Data.Get().(*[]byte)
-	for k, v := range m {
-		binary.BigEndian.PutUint32(*d, uint32(len(k)))
-		bb.Write(*d)
-		bb.Write(util.StringToSliceByte(k))
-		binary.BigEndian.PutUint32(*d, uint32(len(v)))
-		bb.Write(*d)
-		bb.Write(util.StringToSliceByte(v))
-	}
+	return nil
 }
 
 func decodeMetadata(l uint32, data []byte) (map[string]string, error) {
@@ -405,123 +323,138 @@ func decodeMetadata(l uint32, data []byte) (map[string]string, error) {
 	return m, nil
 }
 
-// Read reads a message from r.
-func Read(r io.Reader) (*Message, error) {
-	msg := NewMessage()
-	err := msg.Decode(r)
-	if err != nil {
-		return nil, err
-	}
-	return msg, nil
+// Encode encodes messages.
+func (m Message) Encode() []byte {
+	data := m.EncodeSlicePointer()
+	return *data
 }
 
-// Decode decodes a message from reader.
-func (m *Message) Decode(r io.Reader) error {
-	// validate rest length for each step?
-
-	// parse header
-	_, err := io.ReadFull(r, m.Header[:1])
-	if err != nil {
-		return err
-	}
-	if !m.Header.CheckMagicNumber() {
-		return fmt.Errorf("wrong magic number: %v", m.Header[0])
-	}
-
-	_, err = io.ReadFull(r, m.Header[1:])
-	if err != nil {
-		return err
-	}
-
-	// total
-	lenData := poolUint32Data.Get().(*[]byte)
-	_, err = io.ReadFull(r, *lenData)
-	if err != nil {
-		poolUint32Data.Put(lenData)
-		return err
-	}
-	l := binary.BigEndian.Uint32(*lenData)
-	poolUint32Data.Put(lenData)
-
-	if MaxMessageLength > 0 && int(l) > MaxMessageLength {
-		return ErrMessageTooLong
-	}
-
-	totalL := int(l)
-	if cap(m.data) >= totalL { // reuse data
-		m.data = m.data[:totalL]
-	} else {
-		m.data = make([]byte, totalL)
-	}
-	data := m.data
-	_, err = io.ReadFull(r, data)
-	if err != nil {
-		return err
-	}
-
-	n := 0
-	// parse servicePath
-	l = binary.BigEndian.Uint32(data[n:4])
-	n = n + 4
-	nEnd := n + int(l)
-	m.ServicePath = util.SliceByteToString(data[n:nEnd])
-	n = nEnd
-
-	// parse serviceMethod
-	l = binary.BigEndian.Uint32(data[n : n+4])
-	n = n + 4
-	nEnd = n + int(l)
-	m.ServiceMethod = util.SliceByteToString(data[n:nEnd])
-	n = nEnd
-
-	// parse meta
-	l = binary.BigEndian.Uint32(data[n : n+4])
-	n = n + 4
-	nEnd = n + int(l)
-
-	if l > 0 {
-		m.Metadata, err = decodeMetadata(l, data[n:nEnd])
-		if err != nil {
-			return err
-		}
-	}
-	n = nEnd
-
-	// parse payload
-	l = binary.BigEndian.Uint32(data[n : n+4])
-	_ = l
-	n = n + 4
-	m.Payload = data[n:]
-
-	if m.CompressType() != None {
-		compressor := Compressors[m.CompressType()]
+// EncodeSlicePointer encodes messages as a byte slice pointer we can use pool to improve.
+func (m Message) EncodeSlicePointer() *[]byte {
+	var err error
+	// payload
+	payload := m.Payload
+	if m.GetCompressType() != CompressType_COMPRESS_TYPE_NONE {
+		compressor := Compressors[m.GetCompressType()]
 		if compressor == nil {
-			return ErrUnsupportedCompressor
-		}
-		m.Payload, err = compressor.Unzip(m.Payload)
-		if err != nil {
-			return err
+			m.SetCompressType(CompressType_COMPRESS_TYPE_NONE)
+		} else {
+			payload, err = compressor.Zip(m.Payload)
+			if err != nil {
+				m.SetCompressType(CompressType_COMPRESS_TYPE_NONE)
+				payload = m.Payload
+			}
 		}
 	}
 
-	return err
+	// MetaData
+	bb := bytebufferpool.Get()
+	encodeMetadata(m.Metadata, bb)
+	attachMent := bb.Bytes()
+	m.Meta.AttachmentSize = int32(len(attachMent))
+
+	// Meta
+	encoder := codec.PBCodec{}
+	mb, _ := encoder.Encode(&m.Meta)
+
+	// Header
+	bodyLen := len(mb) + len(attachMent) + len(payload)
+	metaLen := len(mb)
+	h := newHeader(uint32(bodyLen), uint32(metaLen))
+	l := 12 + bodyLen
+	metaStart := 12
+	metaEnd := 12 + metaLen
+	attachStart := metaEnd
+	attachEnd := attachStart + len(attachMent)
+
+	payloadStart := attachEnd
+
+	data := bufferPool.Get(l)
+	copy(*data, h[:])
+	copy((*data)[metaStart:metaEnd], mb)
+	if attachStart != attachEnd {
+		copy((*data)[attachStart:attachEnd], attachMent)
+	}
+	copy((*data)[payloadStart:], payload)
+
+	return data
 }
 
-// Reset clean data of this message but keep allocated data
-func (m *Message) Reset() {
-	resetHeader(m.Header)
-	m.Metadata = nil
-	m.Payload = []byte{}
-	m.data = m.data[:0]
-	m.ServicePath = ""
-	m.ServiceMethod = ""
+// len,string,len,string,......
+func encodeMetadata(m map[string]string, bb *bytebufferpool.ByteBuffer) {
+	if len(m) == 0 {
+		return
+	}
+	d := poolUint32Data.Get().(*[]byte)
+	for k, v := range m {
+		binary.BigEndian.PutUint32(*d, uint32(len(k)))
+		bb.Write(*d)
+		bb.Write(util.StringToSliceByte(k))
+		binary.BigEndian.PutUint32(*d, uint32(len(v)))
+		bb.Write(*d)
+		bb.Write(util.StringToSliceByte(v))
+	}
 }
 
-var (
-	zeroHeaderArray Header
-	zeroHeader      = zeroHeaderArray[1:]
-)
+// PutData puts the byte slice into pool.
+func PutData(data *[]byte) {
+	bufferPool.Put(data)
+}
 
-func resetHeader(h *Header) {
-	copy(h[1:], zeroHeader)
+// WriteTo writes message to writers.
+func (m Message) WriteTo(w io.Writer) (int64, error) {
+	var err error
+	// payload
+	payload := m.Payload
+	if m.GetCompressType() != CompressType_COMPRESS_TYPE_NONE {
+		compressor := Compressors[m.GetCompressType()]
+		if compressor == nil {
+			m.SetCompressType(CompressType_COMPRESS_TYPE_NONE)
+		} else {
+			payload, err = compressor.Zip(m.Payload)
+			if err != nil {
+				m.SetCompressType(CompressType_COMPRESS_TYPE_NONE)
+				payload = m.Payload
+			}
+		}
+	}
+
+	// MetaData
+	bb := bytebufferpool.Get()
+	defer bytebufferpool.Put(bb)
+	encodeMetadata(m.Metadata, bb)
+	attachMent := bb.Bytes()
+	m.Meta.AttachmentSize = int32(len(attachMent))
+
+	// Meta
+	encoder := codec.PBCodec{}
+	mb, err := encoder.Encode(&m.Meta)
+	if err != nil {
+		return 0, err
+	}
+
+	// Header
+	bodyLen := len(mb) + len(attachMent) + len(payload)
+	metaLen := len(mb)
+	h := newHeader(uint32(bodyLen), uint32(metaLen))
+
+	nn, err := w.Write(h[:])
+	n := int64(nn)
+	if err != nil {
+		return n, err
+	}
+
+	_, err = w.Write(mb[:])
+	if err != nil {
+		return n, err
+	}
+	if len(attachMent) > 0 {
+		_, err = w.Write(attachMent[:])
+		if err != nil {
+			return n, err
+		}
+	}
+
+	nn, err = w.Write(payload)
+	return int64(nn), err
 }

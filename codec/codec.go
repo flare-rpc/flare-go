@@ -12,7 +12,6 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	"github.com/tinylib/msgp/msgp"
 	"github.com/vmihailenco/msgpack/v5"
-	pb "google.golang.org/protobuf/proto"
 )
 
 // Codec defines the interface that decode/encode payload.
@@ -66,11 +65,11 @@ func (c PBCodec) Encode(i interface{}) ([]byte, error) {
 		return m.Marshal()
 	}
 
-	if m, ok := i.(pb.Message); ok {
-		return pb.Marshal(m)
+	if m, ok := i.(proto.Message); ok {
+		return proto.Marshal(m)
 	}
 
-	return nil, fmt.Errorf("%T is not a proto.Marshaler or pb.Message", i)
+	return nil, fmt.Errorf("Encode %T is not a proto.Marshaler or proto.Message", i)
 }
 
 // Decode decodes an object from slice of bytes.
@@ -79,11 +78,11 @@ func (c PBCodec) Decode(data []byte, i interface{}) error {
 		return m.Unmarshal(data)
 	}
 
-	if m, ok := i.(pb.Message); ok {
-		return pb.Unmarshal(data, m)
+	if m, ok := i.(proto.Message); ok {
+		return proto.Unmarshal(data, m)
 	}
 
-	return fmt.Errorf("%T is not a proto.Unmarshaler  or pb.Message", i)
+	return fmt.Errorf("Decode %T is not a proto.Unmarshaler  or proto.Message", i)
 }
 
 // MsgpackCodec uses messagepack marshaler and unmarshaler.

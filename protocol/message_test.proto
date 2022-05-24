@@ -1,0 +1,12 @@
+syntax = "proto2";
+
+package flare.rpc.policy;
+option java_package = "com.flare.rpc.policy";
+option java_outer_classname = "FlareRpcProto";
+option go_package = "github.com/flare-rpc/flarego/protocol";
+option optimize_for = SPEED;
+
+message TestProto {
+    required int32 A = 1;
+    optional int32 B = 2;
+}

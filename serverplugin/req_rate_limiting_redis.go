@@ -41,7 +41,7 @@ func NewRedisRateLimitingPlugin(addrs []string, rate int, burst int, period time
 
 // PreReadRequest can limit request processing.
 func (plugin *RedisRateLimitingPlugin) PostReadRequest(ctx context.Context, r *protocol.Message, e error) error {
-	res, err := plugin.limiter.Allow(ctx, r.ServicePath+"/"+r.ServiceMethod, plugin.limit)
+	res, err := plugin.limiter.Allow(ctx, r.GetServiceName()+"/"+r.GetServiceMethod(), plugin.limit)
 	if err != nil {
 		return err
 	}

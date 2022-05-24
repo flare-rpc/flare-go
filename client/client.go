@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	codec2 "github.com/flare-rpc/flarego/codec"
 	"io"
 	"net"
 	"net/url"
@@ -45,10 +46,8 @@ var DefaultOption = Option{
 	Retries:             3,
 	RPCPath:             share.DefaultRPCPath,
 	ConnectTimeout:      time.Second,
-	SerializeType:       protocol.MsgPack,
-	CompressType:        protocol.None,
+	CompressType:        protocol.CompressType_COMPRESS_TYPE_NONE,
 	BackupLatency:       10 * time.Millisecond,
-	MaxWaitForHeartbeat: 30 * time.Second,
 	TCPKeepAlivePeriod:  time.Minute,
 	BidirectionalBlock:  false,
 }
@@ -106,8 +105,8 @@ type Client struct {
 	// w    *bufio.Writer
 
 	mutex        sync.Mutex // protects following
-	seq          uint64
-	pending      map[uint64]*Call
+	seq          int64
+	pending      map[int64]*Call
 	closing      bool // user has called Close
 	shutdown     bool // server has told us to stop
 	pluginClosed bool // the plugin has been called
@@ -145,8 +144,6 @@ type Option struct {
 
 	// TLSConfig for tcp and quic
 	TLSConfig *tls.Config
-	// kcp.BlockCrypt
-	Block interface{}
 	// RPCPath for http connection
 	RPCPath string
 	// ConnectTimeout sets timeout for dialing
@@ -159,15 +156,7 @@ type Option struct {
 
 	// Breaker is used to config CircuitBreaker
 	GenBreaker func() Breaker
-
-	SerializeType protocol.SerializeType
 	CompressType  protocol.CompressType
-
-	// send heartbeat message to service and check responses
-	Heartbeat bool
-	// interval for heartbeat
-	HeartbeatInterval   time.Duration
-	MaxWaitForHeartbeat time.Duration
 
 	// TCPKeepAlive, if it is zero we don't set keepalive
 	TCPKeepAlivePeriod time.Duration
@@ -267,7 +256,7 @@ func (client *Client) Call(ctx context.Context, servicePath, serviceMethod strin
 }
 
 func (client *Client) call(ctx context.Context, servicePath, serviceMethod string, args interface{}, reply interface{}) error {
-	seq := new(uint64)
+	seq := new(int64)
 	ctx = context.WithValue(ctx, seqKey{}, seq)
 
 	if share.Trace {
@@ -310,12 +299,12 @@ func (client *Client) call(ctx context.Context, servicePath, serviceMethod strin
 
 // SendRaw sends raw messages. You don't care args and replies.
 func (client *Client) SendRaw(ctx context.Context, r *protocol.Message) (map[string]string, []byte, error) {
-	ctx = context.WithValue(ctx, seqKey{}, r.Seq())
+	ctx = context.WithValue(ctx, seqKey{}, r.GetCorrelationId())
 
 	call := new(Call)
 	call.Raw = true
-	call.ServicePath = r.ServicePath
-	call.ServiceMethod = r.ServiceMethod
+	call.ServicePath = r.GetServiceName()
+	call.ServiceMethod = r.GetServiceMethod()
 	meta := ctx.Value(share.ReqMetaDataKey)
 
 	rmeta := make(map[string]string)
@@ -345,10 +334,10 @@ func (client *Client) SendRaw(ctx context.Context, r *protocol.Message) (map[str
 	done := make(chan *Call, 10)
 	call.Done = done
 
-	seq := r.Seq()
+	seq := r.GetCorrelationId()
 	client.mutex.Lock()
 	if client.pending == nil {
-		client.pending = make(map[uint64]*Call)
+		client.pending = make(map[int64]*Call)
 	}
 	client.pending[seq] = call
 	client.mutex.Unlock()
@@ -367,16 +356,6 @@ func (client *Client) SendRaw(ctx context.Context, r *protocol.Message) (map[str
 			call.done()
 		}
 		return nil, nil, err
-	}
-	if r.IsOneway() {
-		client.mutex.Lock()
-		call = client.pending[seq]
-		delete(client.pending, seq)
-		client.mutex.Unlock()
-		if call != nil {
-			call.done()
-		}
-		return nil, nil, nil
 	}
 
 	var m map[string]string
@@ -407,28 +386,14 @@ func (client *Client) SendRaw(ctx context.Context, r *protocol.Message) (map[str
 
 func convertRes2Raw(res *protocol.Message) (map[string]string, []byte, error) {
 	m := make(map[string]string)
-	m[XVersion] = strconv.Itoa(int(res.Version()))
-	if res.IsHeartbeat() {
-		m[XHeartbeat] = "true"
-	}
-	if res.IsOneway() {
-		m[XOneway] = "true"
-	}
-	if res.MessageStatusType() == protocol.Error {
-		m[XMessageStatusType] = "Error"
-	} else {
-		m[XMessageStatusType] = "Normal"
-	}
-
 	// if res.CompressType() == protocol.Gzip {
 	// 	m["Content-Encoding"] = "gzip"
 	// }
 
 	m[XMeta] = urlencode(res.Metadata)
-	m[XSerializeType] = strconv.Itoa(int(res.SerializeType()))
-	m[XMessageID] = strconv.FormatUint(res.Seq(), 10)
-	m[XServicePath] = res.ServicePath
-	m[XServiceMethod] = res.ServiceMethod
+	m[XMessageID] = strconv.FormatInt(res.GetCorrelationId(), 10)
+	m[XServicePath] = res.GetServiceName()
+	m[XServiceMethod] = res.GetServiceMethod()
 
 	return m, res.Payload, nil
 }
@@ -458,21 +423,10 @@ func (client *Client) send(ctx context.Context, call *Call) {
 		return
 	}
 
-	isHeartbeat := call.ServicePath == "" && call.ServiceMethod == ""
-	serializeType := client.option.SerializeType
-	if isHeartbeat {
-		serializeType = protocol.MsgPack
-	}
-	codec := share.Codecs[serializeType]
-	if codec == nil {
-		call.Error = ErrUnsupportedCodec
-		client.mutex.Unlock()
-		call.done()
-		return
-	}
+	coder := &codec2.PBCodec{}
 
 	if client.pending == nil {
-		client.pending = make(map[uint64]*Call)
+		client.pending = make(map[int64]*Call)
 	}
 
 	seq := client.seq
@@ -480,34 +434,22 @@ func (client *Client) send(ctx context.Context, call *Call) {
 	client.pending[seq] = call
 	client.mutex.Unlock()
 
-	if cseq, ok := ctx.Value(seqKey{}).(*uint64); ok {
+	if cseq, ok := ctx.Value(seqKey{}).(*int64); ok {
 		*cseq = seq
 	}
 
 	// req := protocol.NewMessage()
 	req := protocol.GetPooledMsg()
-	req.SetMessageType(protocol.Request)
-	req.SetSeq(seq)
-	if call.Reply == nil {
-		req.SetOneway(true)
-	}
-
-	// heartbeat, and use default SerializeType (msgpack)
-	if isHeartbeat {
-		req.SetHeartbeat(true)
-		req.SetSerializeType(protocol.MsgPack)
-	} else {
-		req.SetSerializeType(client.option.SerializeType)
-	}
+	req.SetCorrelationId(seq)
 
 	if call.Metadata != nil {
 		req.Metadata = call.Metadata
 	}
 
-	req.ServicePath = call.ServicePath
-	req.ServiceMethod = call.ServiceMethod
+	req.SetServiceName(call.ServicePath)
+	req.SetServiceMethod(call.ServiceMethod)
 
-	data, err := codec.Encode(call.Args)
+	data, err := coder.Encode(call.Args)
 	if err != nil {
 		client.mutex.Lock()
 		delete(client.pending, seq)
@@ -516,7 +458,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 		call.done()
 		return
 	}
-	if len(data) > 1024 && client.option.CompressType != protocol.None {
+	if len(data) > 1024 && client.option.CompressType != protocol.CompressType_COMPRESS_TYPE_NONE {
 		req.SetCompressType(client.option.CompressType)
 	}
 
@@ -549,18 +491,7 @@ func (client *Client) send(ctx context.Context, call *Call) {
 		return
 	}
 
-	isOneway := req.IsOneway()
 	protocol.FreeMsg(req)
-
-	if isOneway {
-		client.mutex.Lock()
-		call = client.pending[seq]
-		delete(client.pending, seq)
-		client.mutex.Unlock()
-		if call != nil {
-			call.done()
-		}
-	}
 
 	if client.option.IdleTimeout != 0 {
 		_ = client.Conn.SetDeadline(time.Now().Add(client.option.IdleTimeout))
@@ -584,33 +515,23 @@ func (client *Client) input() {
 			_ = client.Plugins.DoClientAfterDecode(res)
 		}
 
-		seq := res.Seq()
+		seq := res.GetCorrelationId()
 		var call *Call
-		isServerMessage := (res.MessageType() == protocol.Request && !res.IsHeartbeat() && res.IsOneway())
-		if !isServerMessage {
-			client.mutex.Lock()
-			call = client.pending[seq]
-			delete(client.pending, seq)
-			client.mutex.Unlock()
-		}
+		client.mutex.Lock()
+		call = client.pending[seq]
+		delete(client.pending, seq)
+		client.mutex.Unlock()
 
 		if share.Trace {
 			log.Debugf("client.input received %v", res)
 		}
 
 		switch {
-		case call == nil:
-			if isServerMessage {
-				if client.ServerMessageChan != nil {
-					client.handleServerRequest(res)
-				}
-				continue
-			}
-		case res.MessageStatusType() == protocol.Error:
+		case res.IsBadResponse():
 			// We've got an error response. Give this to the request
+			call.Error = ServiceError(res.GetResponseErrorMsg())
 			if len(res.Metadata) > 0 {
 				call.ResMetadata = res.Metadata
-				call.Error = ServiceError(res.Metadata[protocol.ServiceError])
 			}
 
 			if call.Raw {
@@ -618,10 +539,8 @@ func (client *Client) input() {
 				call.Metadata[XErrorMessage] = call.Error.Error()
 			} else if len(res.Payload) > 0 {
 				data := res.Payload
-				codec := share.Codecs[res.SerializeType()]
-				if codec != nil {
-					_ = codec.Decode(data, call.Reply)
-				}
+				codec := &codec2.PBCodec{}
+				_ = codec.Decode(data, call.Reply)
 			}
 			call.done()
 		default:
@@ -630,15 +549,12 @@ func (client *Client) input() {
 			} else {
 				data := res.Payload
 				if len(data) > 0 {
-					codec := share.Codecs[res.SerializeType()]
-					if codec == nil {
-						call.Error = ServiceError(ErrUnsupportedCodec.Error())
-					} else {
-						err = codec.Decode(data, call.Reply)
-						if err != nil {
-							call.Error = ServiceError(err.Error())
-						}
+					codec := &codec2.PBCodec{}
+					err = codec.Decode(data, call.Reply)
+					if err != nil {
+						call.Error = ServiceError(err.Error())
 					}
+
 				}
 				if len(res.Metadata) > 0 {
 					call.ResMetadata = res.Metadata
@@ -650,20 +566,6 @@ func (client *Client) input() {
 		}
 	}
 	// Terminate pending calls.
-
-	if client.ServerMessageChan != nil {
-		req := protocol.NewMessage()
-		req.SetMessageType(protocol.Request)
-		req.SetMessageStatusType(protocol.Error)
-		if req.Metadata == nil {
-			req.Metadata = make(map[string]string)
-			if err != nil {
-				req.Metadata[protocol.ServiceError] = err.Error()
-			}
-		}
-		req.Metadata["server"] = client.Conn.RemoteAddr().String()
-		client.handleServerRequest(req)
-	}
 
 	client.mutex.Lock()
 	if !client.pluginClosed {
@@ -710,46 +612,8 @@ func (client *Client) handleServerRequest(msg *protocol.Message) {
 			select {
 			case serverMessageChan <- msg:
 			default:
-				log.Warnf("ServerMessageChan may be full so the server request %d has been dropped", msg.Seq())
+				log.Warnf("ServerMessageChan may be full so the server request %d has been dropped", msg.GetCorrelationId())
 			}
-		}
-	}
-}
-
-func (client *Client) heartbeat() {
-	t := time.NewTicker(client.option.HeartbeatInterval)
-
-	if client.option.MaxWaitForHeartbeat == 0 {
-		client.option.MaxWaitForHeartbeat = 30 * time.Second
-	}
-
-	for range t.C {
-		if client.IsShutdown() || client.IsClosing() {
-			t.Stop()
-			return
-		}
-
-		request := time.Now().UnixNano()
-		reply := int64(0)
-		ctx, cancel := context.WithTimeout(context.Background(), client.option.MaxWaitForHeartbeat)
-		err := client.Call(ctx, "", "", &request, &reply)
-		abnormal := false
-		if ctx.Err() != nil {
-			log.Warnf("failed to heartbeat to %s, context err: %v", client.Conn.RemoteAddr().String(), ctx.Err())
-			abnormal = true
-		}
-		cancel()
-		if err != nil {
-			log.Warnf("failed to heartbeat to %s: %v", client.Conn.RemoteAddr().String(), err)
-			abnormal = true
-		}
-
-		if reply != request {
-			log.Warnf("reply %d in heartbeat to %s is different from request %d", reply, client.Conn.RemoteAddr().String(), request)
-		}
-
-		if abnormal {
-			client.Close()
 		}
 	}
 }

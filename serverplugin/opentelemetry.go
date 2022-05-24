@@ -76,7 +76,7 @@ func (p OpenTelemetryPlugin) PreHandleRequest(ctx context.Context, r *protocol.M
 	spanCtx := share.Extract(ctx, p.propagators)
 	ctx0 := trace.ContextWithSpanContext(ctx, spanCtx)
 
-	ctx1, span := p.tracer.Start(ctx0, "flare.service."+r.ServicePath+"."+r.ServiceMethod)
+	ctx1, span := p.tracer.Start(ctx0, "flare.service."+r.GetServiceName()+"."+r.GetServiceMethod())
 	share.Inject(ctx1, p.propagators)
 
 	ctx.(*share.Context).SetValue(share.OpenTelemetryKey, span)

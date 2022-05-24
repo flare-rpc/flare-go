@@ -196,7 +196,7 @@ func (c *OneClient) Call(ctx context.Context, servicePath string, serviceMethod 
 }
 
 func (c *OneClient) SendRaw(ctx context.Context, r *protocol.Message) (map[string]string, []byte, error) {
-	servicePath := r.ServicePath
+	servicePath := r.GetServiceName()
 
 	c.mu.RLock()
 	xclient := c.xclients[servicePath]

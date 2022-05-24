@@ -49,11 +49,11 @@ func (s *Server) startGateway(network string, ln net.Listener) net.Listener {
 }
 
 func flarePrefixByteMatcher() cmux.Matcher {
-	magic := protocol.MagicNumber()
+	magic := protocol.MagicString()
 	return func(r io.Reader) bool {
-		buf := make([]byte, 1)
+		buf := make([]byte, 4)
 		n, _ := r.Read(buf)
-		return n == 1 && buf[0] == magic
+		return n == 4 && string(buf) == string(magic)
 	}
 }
 
