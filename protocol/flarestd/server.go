@@ -23,7 +23,9 @@ func (s *server) ServeConn(conn net.Conn) {
 	s.s.ServeCodec(codec)
 }
 
-// Serve accepts incoming connections on the listener l, creating a new ServerConn and service goroutine for each. The service goroutines read pbrpc requests and then call the registered handlers to reply to them. Serve returns when l.Accept fails with errors.
+// Serve accepts incoming connections on the listener l, creating a new ServerConn and service goroutine for each.
+// The service goroutines read protobuf rpc requests and then call the registered handlers to reply to them. Serve returns
+// when l.Accept fails with errors.
 // TODO Handle non fatal errors
 func (s *server) Serve(l net.Listener) error {
 	for {
