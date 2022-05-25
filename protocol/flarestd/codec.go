@@ -1,4 +1,4 @@
-package bstd
+package flarestd
 
 import (
 	"bufio"
@@ -12,12 +12,10 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/flare-rpc/flarego/protocol/std/metapb"
+	"github.com/flare-rpc/flarego/protocol/flarestd/metapb"
 	"github.com/keegancsmith/rpc"
 	"google.golang.org/protobuf/proto"
 )
-
-// protocol spec from https://github.com/apache/incubator-brpc/blob/60159fc3f3e13490fb9806ea0a0cb0dcdbda7f7d/docs/cn/baidu_std.md
 
 var (
 	MagicStr          = [4]byte{'P', 'R', 'P', 'C'}

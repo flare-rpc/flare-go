@@ -1,4 +1,4 @@
-package brpc
+package flarego
 
 // DialOption configures how we set up the connection.
 type DialOption interface{}

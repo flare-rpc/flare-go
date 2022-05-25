@@ -20,7 +20,7 @@ syntax="proto3";
 package flare;
 option java_package="com.flare";
 option java_outer_classname="StreamingRpcProto";
-option go_package="github.com/flare-rpc/flarego/protocol/std/metapb";
+option go_package="github.com/flare-rpc/flarego/protocol/flarestd/metapb";
 
 message StreamSettings {
     int64 stream_id = 1;

@@ -1,4 +1,4 @@
-package brpc
+package flarego
 
 // NewServer creates a new server according to the protocol.
 func NewServer(protocol string, options ...ServerOption) Server {
