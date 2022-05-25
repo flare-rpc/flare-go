@@ -219,7 +219,7 @@ type clientCodec struct {
 	m metapb.RpcMeta
 }
 
-// newClientCodec returns a new rpc.ClientCodec using sofa-pbrpc on conn.
+// newClientCodec returns a new rpc.ClientCodec
 func newClientCodec(conn io.ReadWriteCloser) rpc.ClientCodec {
 	return &clientCodec{c: newCodec(conn)}
 }
@@ -276,7 +276,7 @@ type serverCodec struct {
 	pending map[uint64]*metapb.RpcMeta
 }
 
-// newServerCodec returns a new rpc.ServerCodec using sofa-pbrpc on conn.
+// newServerCodec returns a new rpc.ServerCodec.
 func newServerCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
 	return &serverCodec{
 		c:       newCodec(conn),

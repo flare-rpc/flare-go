@@ -2,65 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="cbc544c5-33a4-4794-bc94-494d23517d61" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/examples/echo/echo.flare.pb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/examples/echo/echo.pb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/protocol/flarestd/metapb/flare_rpc_meta.pb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/protocol/flarestd/metapb/streaming_rpc_meta.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/client/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/client/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/compile_proto.sh" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/compile_proto.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/echo.proto" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/echo.proto" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/echo/echo.flare.pb.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/echo/echo_brpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/echo_flare.pb.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/examples/echo/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.work" beforeDir="false" afterPath="$PROJECT_DIR$/go.work" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/options.go" beforeDir="false" afterPath="$PROJECT_DIR$/options.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protoc-gen-flarego/flare.go" beforeDir="false" afterPath="$PROJECT_DIR$/protoc-gen-flarego/flare.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-http/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-http/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/codec.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/compress.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/metapb/baidu_rpc_meta.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/metapb/baidu_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/metapb/compile_proto.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/metapb/streaming_rpc_meta.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/metapb/streaming_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/brpc-std/server.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_http/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_http/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/codec.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/compress.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/metapb/baidu_rpc_meta.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/metapb/baidu_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/metapb/compile_proto.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/metapb/streaming_rpc_meta.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/metapb/streaming_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flare_std/server.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarehttp/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarehttp/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarehttp/protocol.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarehttp/protocol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/protocol/flarestd/codec.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/codec.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/compress.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/compress.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/metapb/baidu_rpc_meta.proto" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/metapb/flare_rpc_meta.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/metapb/streaming_rpc_meta.proto" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/metapb/streaming_rpc_meta.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/protocol.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/protocol.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/protocol/flarestd/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/http/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/http/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/client.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/codec.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/compress.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/metapb/baidu_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/metapb/compile_proto.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/metapb/streaming_rpc_meta.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/protocol.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/std/server.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -166,10 +115,10 @@
     </state>
     <state x="341" y="132" key="SettingsEditor/0.23.1680.937@0.23.1680.937" timestamp="1653452497525" />
     <state x="341" y="134" key="SettingsEditor/0.23.1680.954@0.23.1680.954" timestamp="1653291412573" />
-    <state x="540" y="248" width="600" height="538" key="find.popup" timestamp="1653452222936">
+    <state x="540" y="248" width="600" height="538" key="find.popup" timestamp="1653454350480">
       <screen x="0" y="23" width="1680" height="937" />
     </state>
-    <state x="540" y="248" width="600" height="538" key="find.popup/0.23.1680.937@0.23.1680.937" timestamp="1653452222936" />
+    <state x="540" y="248" width="600" height="538" key="find.popup/0.23.1680.937@0.23.1680.937" timestamp="1653454350480" />
     <state x="540" y="252" width="600" height="538" key="find.popup/0.23.1680.954@0.23.1680.954" timestamp="1653352598176" />
   </component>
 </project>

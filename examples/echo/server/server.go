@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/flare-rpc/flarego"
@@ -13,6 +14,7 @@ type echoService struct {
 }
 
 func (s *echoService) Echo(ctx context.Context, req *echo.EchoRequest) (*echo.EchoResponse, error) {
+	fmt.Println("client call")
 	return &echo.EchoResponse{
 		Message: "reply: " + req.Message,
 	}, nil
@@ -23,7 +25,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server := flarego.NewServer(fstd.ProtocolName)
+	server := flarego.NewServer(flarestd.ProtocolName)
 	echo.RegisterEchoServerServer(server, &echoService{})
 	server.Serve(l)
 }
