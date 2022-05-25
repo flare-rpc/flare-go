@@ -1,4 +1,4 @@
-package brpc
+package flarego
 
 import (
 	"errors"

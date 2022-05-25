@@ -1,4 +1,4 @@
-package bhttp
+package flarehttp
 
 import "github.com/flare-rpc/flarego"
 

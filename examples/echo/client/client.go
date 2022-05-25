@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/icexin/brpc-go"
-	"github.com/icexin/brpc-go/examples/echo"
-	bstd "github.com/icexin/brpc-go/protocol/brpc-std"
+	"github.com/flare-rpc/flarego"
+	"github.com/flare-rpc/flarego/examples/echo"
+	"github.com/flare-rpc/flarego/protocol/flarestd"
 )
 
 func main() {
-	clientConn, err := brpc.Dial(bstd.ProtocolName, "127.0.0.1:8080")
+	clientConn, err := flarego.Dial(flarestd.ProtocolName, "127.0.0.1:8080")
 	if err != nil {
 		panic(err)
 	}

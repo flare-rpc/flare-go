@@ -20,8 +20,8 @@ import "streaming_rpc_meta.proto";
 
 package flare.policy;
 option java_package="com.flare.policy";
-option java_outer_classname="BaiduRpcProto";
-option go_package="github.com/flare-rpc/flarego/protocol/std/metapb";
+option java_outer_classname="FlareRpcProto";
+option go_package="github.com/flare-rpc/flarego/protocol/flarestd/metapb";
 
 enum CompressType {
     COMPRESS_TYPE_NONE = 0;

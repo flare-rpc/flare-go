@@ -1,4 +1,4 @@
-package fstd
+package flarestd
 
 import (
 	"github.com/flare-rpc/flarego"

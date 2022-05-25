@@ -4,9 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/icexin/brpc-go"
-	"github.com/icexin/brpc-go/examples/echo"
-	bstd "github.com/icexin/brpc-go/protocol/brpc-std"
+	"github.com/flare-rpc/flarego"
+	"github.com/flare-rpc/flarego/examples/echo"
+	"github.com/flare-rpc/flarego/protocol/flarestd"
 )
 
 type echoService struct {
@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server := brpc.NewServer(bstd.ProtocolName)
+	server := flarego.NewServer(fstd.ProtocolName)
 	echo.RegisterEchoServerServer(server, &echoService{})
 	server.Serve(l)
 }

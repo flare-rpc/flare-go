@@ -1,4 +1,4 @@
-package bstd
+package flarestd
 
 import (
 	"net"

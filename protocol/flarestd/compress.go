@@ -1,4 +1,4 @@
-package bstd
+package flarestd
 
 import (
 	"compress/gzip"
@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/snappy"
-	"github.com/flare-rpc/flarego/protocol/std/metapb"
+	"github.com/flare-rpc/flarego/protocol/flarestd/metapb"
 	"github.com/pierrec/lz4"
 )
 

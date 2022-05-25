@@ -1,4 +1,4 @@
-package bstd
+package flarestd
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ func (c *clientConn) Close() error {
 	return c.c.Close()
 }
 
-func grpcMethodToBrpcMethod(method string) string {
+func grpcMethodToFlareMethod(method string) string {
 	methodbuf := []byte(method[1:])
 	i := bytes.Index(methodbuf, []byte{'/'})
 	methodbuf[i] = '.'
@@ -27,9 +27,9 @@ func grpcMethodToBrpcMethod(method string) string {
 }
 
 // Invoke sends the RPC request on the wire and returns after response is received. Invoke is called by generated code. Also users can call Invoke directly when it is really needed in their use cases.
-func (c *clientConn) Invoke(ctx context.Context, method string, args interface{}, reply interface{}, opts ...brpc.CallOption) error {
-	brpcMethod := grpcMethodToBrpcMethod(method)
-	return c.c.Call(ctx, brpcMethod, args, reply)
+func (c *clientConn) Invoke(ctx context.Context, method string, args interface{}, reply interface{}, opts ...flarego.CallOption) error {
+	flareMethod := grpcMethodToFlareMethod(method)
+	return c.c.Call(ctx, flareMethod, args, reply)
 }
 
 func dial(target string, options ...flarego.DialOption) (flarego.ClientConn, error) {
