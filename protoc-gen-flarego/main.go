@@ -38,7 +38,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-const version = "1.2.0"
+const version = "0.2.0"
 
 var requireUnimplemented *bool
 
@@ -46,7 +46,7 @@ func main() {
 	showVersion := flag.Bool("version", false, "print the version and exit")
 	flag.Parse()
 	if *showVersion {
-		fmt.Printf("protoc-gen-go-grpc %v\n", version)
+		fmt.Printf("protoc-gen-flarego %v\n", version)
 		return
 	}
 

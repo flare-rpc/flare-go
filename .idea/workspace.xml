@@ -2,14 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="cbc544c5-33a4-4794-bc94-494d23517d61" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/echo.flare.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/echo_brpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/echo_flare.pb.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/echo/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/examples/echo/server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/codec.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/codec.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/protocol/flarestd/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/protocol/flarestd/server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/protoc-gen-flarego/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/protoc-gen-flarego/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -115,10 +109,10 @@
     </state>
     <state x="341" y="132" key="SettingsEditor/0.23.1680.937@0.23.1680.937" timestamp="1653452497525" />
     <state x="341" y="134" key="SettingsEditor/0.23.1680.954@0.23.1680.954" timestamp="1653291412573" />
-    <state x="540" y="248" width="600" height="538" key="find.popup" timestamp="1653454350480">
+    <state x="540" y="248" width="600" height="538" key="find.popup" timestamp="1653454548635">
       <screen x="0" y="23" width="1680" height="937" />
     </state>
-    <state x="540" y="248" width="600" height="538" key="find.popup/0.23.1680.937@0.23.1680.937" timestamp="1653454350480" />
+    <state x="540" y="248" width="600" height="538" key="find.popup/0.23.1680.937@0.23.1680.937" timestamp="1653454548635" />
     <state x="540" y="252" width="600" height="538" key="find.popup/0.23.1680.954@0.23.1680.954" timestamp="1653352598176" />
   </component>
 </project>
